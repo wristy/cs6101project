@@ -1,0 +1,129 @@
+\documentclass[11pt]{article}
+
+% ---------- PAGE / SPACING ----------
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+% ---------- CITATIONS ----------
+\usepackage[numbers,sort&compress]{natbib}   % swap for biblatex if you prefer
+
+% ---------- TABLES / PLAN ----------
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+
+% ---------- LINKS ----------
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% ---------- HEADER STYLING ----------
+\titleformat{\section}{\large\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing{\section}{0pt}{8pt}{4pt}
+\titlespacing{\subsection}{0pt}{6pt}{2pt}
+
+\setlength{\parindent}{0pt}
+
+\title{\vspace{-1.5em}Project Proposal: \textsc{Investigating ThoughtTracing and AutoToM}}
+\author{
+  % ---- EDIT: one line per team member ----
+  Zhang Ke Wei \\
+  Yakoob Ahmad Hanif \\
+}
+\date{\vspace{-0.5em}}
+
+% NOTE ON LENGTH: "at most one page per team member" — for a 2-person team
+% that's a 2-page budget. This template is compact by design; if you're
+% under budget, expand Related Work or Risks rather than padding.
+
+\begin{document}
+\maketitle
+\vspace{-2em}
+
+% =========================================================
+\section{Introduction}
+% Answers: "What do you want to do? What research question are you
+% answering?" and "How does your question and approach relate to this class?"
+
+Bayesian Theory of Mind (BToM) is a framework that models an agent's mental states (beliefs, desires, intentions) by inverting a generative planning process. To make this approach tractable, scalable and generalizable to potentially any scenario, two recent papers (\textit{ThoughtTracing} \citep{kim2025hypothesisdriventheoryofmindreasoninglarge}
+and \textit{AutoToM} \citep{zhang2026autotomscalingmodelbasedmental}), incorporate Large Language Models (LLMs) into the BToM framework in different ways. 
+
+We have the following research questions:
+
+\begin{itemize}
+    \item How do these approaches perform on newer, open weight models? And on newer ToM benchmarks?
+    \item What if ThoughtTracing's belief hypotheses were not free text, but instead structured tuples? For instance, like in AutoToM, in an explicit (observation, belief, goal) tuple?
+    \item Could iteratively summarizing the trajectory in ThoughtTracing help with performance? 
+    \item Could we improve performance by modifying how new hypotheses are generated in the self-correction step of ThoughtTracing?
+    \item Would crafting more complex master prompts for ThoughtTracing help with performance?
+    \item How much of AutoToM's performance improvement can be attributed to increased test-time compute?
+    \item How can we combine AutoToM and ThoughtTracing's architectures? Currently, each ThoughtTracing particle is an LLM-generated belief hypothesis $h_t^{(i)}$ together with its probability weight $w_t^{(i)}$. What if we structure each particle as a causal Bayesian network tuple of latent variables $h_t^{(i)} = (o_t^{(i)}, b_t^{(i)}, g_t^{(i)})$ (as in AutoToM)?
+    \item Can we use actual log-probabilities provided by open-weight models to improve performance, while bypassing the qualitative multiple-choice approximations required by closed-source APIs? This might require certain calibration techniques that take into account effects of length, word choice, etc. on the actual log-likelihoods.
+\end{itemize}
+
+
+The approaches we want to try out and the questions raised here relate to this class as both papers directly tackle the challenge of making the BToM framework tractable and scalable. 
+% =========================================================
+\section{Related Work}
+\textit{ThoughtTracing} \citep{kim2025hypothesisdriventheoryofmindreasoninglarge}
+runs a Sequential Monte Carlo (SMC) particle filter over natural-language
+hypotheses about an agent's beliefs. It preprocesses raw text into structured
+state-action-perception trajectories $\{(s_t, a_t, p_t)\}_{t=1}^T$ using LLMs that perform
+action labeling and perception inference over a scenario. It then propagates active hypotheses,
+updates weights with likelihoods (queries the LLMs to obtain the likelihoods), and avoids particle degeneracy using threshold-based resampling and rejuvenation. 
+
+In contrast,
+\textit{AutoToM} \citep{zhang2026autotomscalingmodelbasedmental} performs explicit agent modeling by querying an LLM to automatically construct a causal Bayesian network of latent variables $V_t = \{o_t, b_t, g_t\}$ and observables $X_t = \{s_t, a_t, u_t\}$.
+It optimizes a structural model utility $U(M, q) = -H(P(q \mid X_{ts:t})) - \alpha|M|$
+by executing iterative variable adjustments, evaluating local conditionals, and calculating target posteriors.
+
+Both methods significantly outperform commercially available reasoning models (such as o1 or DeepSeek-R1), but AutoToM further outperforms ThoughtTracing by a wide margin. 
+
+% =========================================================
+\section{Project Plan}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{@{}p{0.14\textwidth}p{0.10\textwidth}p{0.68\textwidth}@{}}
+\toprule
+\textbf{Owner} & \textbf{By} & \textbf{Step} \\
+\midrule
+Ke Wei   & Wk 2 & Read through both papers carefully once again  \\
+Ke Wei   & Wk 3 & Get ThoughtTracing and AutoToM both running on the same open-weight models - Qwen/Qwen3.8-27B, etc. \\
+Ke Wei   & Wk 4 & Run both methods on a benchmark and record how well each does \\
+Ke Wei   & Wk 6 & Implement key ideas to improve ThoughtTracing\\
+Ke Wei   & Wk 7 & Control for compute amount and test performance\\
+Ke Wei   & Wk 8 & Run both methods on actual log-likelihoods  \\
+Ke Wei   & Wk 9/10 & Prepare for presentation \\
+
+\addlinespace
+Yakoob   & Wk 2 & Read through both papers carefully once again  \\
+Yakoob   & Wk 3 & Set up the benchmarks\\
+Yakoob   & Wk 6 & Build a combined version that uses ThoughtTracing's step-by-step reasoning together with AutoToM's bayesian networks and utility adjustment\\
+Yakoob   & Wk 7 & Test the combined version against the two original methods \\
+Yakoob   & Wk 8 & Write up the results\\
+Yakoob   & Wk 9/10 & Prepare for presentation \\
+\bottomrule
+\end{tabular}
+\caption{Project timeline}
+\end{table}
+
+% =========================================================
+
+\section{Risks}
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+    \item \textbf{Risk 1:} We might not be able to test all of our research ideas in the limited time allocated. We will have to decide what seems more promising and try to implement those ideas while discarding the rest. 
+    \item \textbf{Risk 2:} Trying to combine the architectures of AutoToM and ThoughtTracing might be more involved than expected. 
+    \item \textbf{Risk 3:   } None of the ideas we have to improve the performance may work. We might then need to explain why the ideas did not work and suggest what we can learn from this. 
+\end{itemize}
+
+% =========================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

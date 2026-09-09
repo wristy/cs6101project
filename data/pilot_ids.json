@@ -1,0 +1,37 @@
+{
+  "dataset": "ParaphrasedToMi",
+  "split": "test",
+  "answer_format": "free_text",
+  "seed": 42,
+  "source_sha256": "2c741e940736af097393245348cc1362102ec488450b63cf2c8190ac5a263c6c",
+  "trace_sha256": "ba6a7d93c035f975e06cf7a3ec1b9f37d3d3008ddaf3af42b86ffb05c09c3595",
+  "eligible_first_order_questions": 2002,
+  "debug_ids": [
+    "test:3133",
+    "test:5833"
+  ],
+  "pilot_ids": [
+    "test:2339",
+    "test:3157",
+    "test:5355",
+    "test:5849",
+    "test:856",
+    "test:791",
+    "test:722",
+    "test:3705",
+    "test:3389",
+    "test:3083",
+    "test:5814",
+    "test:4844",
+    "test:1245",
+    "test:3650",
+    "test:3852",
+    "test:4448",
+    "test:884",
+    "test:4700",
+    "test:5839",
+    "test:1993"
+  ],
+  "selection": "10 first-order true and 10 false belief questions; distinct story texts",
+  "autotom_hypotheses": "Stable last-word candidates from released loader; no gold filtering"
+}

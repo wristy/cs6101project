@@ -1,0 +1,41 @@
+{
+  "track": "autotom",
+  "methods": [
+    "plain",
+    "autotom"
+  ],
+  "dataset": "AutoToM-ToMi",
+  "split": "test",
+  "answer_format": "multiple_choice",
+  "seed": 42,
+  "source_sha256": "f6c029c38366fe657123b422fb8e5604ca9cf9b0bba3b49c9fe5a6ad1b10a294",
+  "eligible_first_order_questions": 400,
+  "debug_ids": [
+    "autotom:499",
+    "autotom:669"
+  ],
+  "pilot_ids": [
+    "autotom:663",
+    "autotom:629",
+    "autotom:397",
+    "autotom:770",
+    "autotom:557",
+    "autotom:858",
+    "autotom:881",
+    "autotom:91",
+    "autotom:235",
+    "autotom:510",
+    "autotom:334",
+    "autotom:488",
+    "autotom:554",
+    "autotom:685",
+    "autotom:792",
+    "autotom:2",
+    "autotom:211",
+    "autotom:608",
+    "autotom:344",
+    "autotom:713"
+  ],
+  "selection": "10 first-order true and 10 false belief questions; distinct story texts",
+  "comparison": "Small first-order pilot, not comparable to full published benchmark scores"
+}
