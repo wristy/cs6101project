@@ -11,6 +11,20 @@ Each track has 2 debugging questions and 20 fixed pilot questions: 10 true-belie
 and 10 false-belief questions, all first-order. Debug and pilot story texts are
 disjoint. Choices for AutoToM come from `containers` metadata, not sentence endings.
 
+## Setup
+
+Python 3.12+, Git, and `uv` are required. Restore the pinned official sources,
+apply the compatibility patches, install the locked environment, register
+the notebook kernel, and run the offline tests:
+
+```sh
+bash scripts/bootstrap.sh
+```
+
+The bootstrap downloads code and Python dependencies, not model weights. It does
+not launch a GPU server or reset existing checkouts. Source changes are recorded
+in [patches/README.md](patches/README.md).
+
 ## Notebooks
 
 Use the existing `.venv` and the `tom-research` notebook kernel.
@@ -65,6 +79,18 @@ No weight downloads or GPU jobs are part of offline setup. Live runs require an
 allocated GPU, a verified endpoint, pinned model revision, and recorded hardware
 and server versions in `configs/pilot.json`. Complete the selected track's live
 debug notebook first. The pilot refuses mismatched debug settings or datasets.
+
+Before enabling live mode, verify non-thinking generation and the exact raw `A`
+token probability against the deployed server/tokenizer. Missing label scores
+stop the run; they are not replaced with a guessed value. Keep a modest context
+limit and concurrency 1 initially. Record any context or output budget changes
+before freezing the run. Failed items remain visible; use a new result directory
+after fixing errors instead of silently replacing earlier records.
+
+Offline verification covers a scripted one-step execution of the real
+ThoughtTracing tracer, AutoToM's real likelihood path, method adapter contracts,
+and both notebook tracks. It does not validate a complete AutoToM solve against
+Qwen or establish research accuracy. No such live result is claimed.
 
 Official sources: [ThoughtTracing](https://github.com/skywalker023/thought-tracing)
 and [AutoToM](https://github.com/SCAI-JHU/AutoToM).

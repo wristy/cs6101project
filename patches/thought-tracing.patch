@@ -1,0 +1,23 @@
+diff --git a/agents/load_model.py b/agents/load_model.py
+index a041460..041ffe0 100644
+--- a/agents/load_model.py
++++ b/agents/load_model.py
+@@ -1,9 +1,14 @@
+-from .gpt import AsyncConversationalGPTBaseAgent, ConversationalGPTBaseAgent, O1BaseAgent, O1MiniAgent
+-from .gemini import AsyncGeminiAgent
+-from .together_ai import AsyncTogetherAIAgent, AsyncLlama3Agent, AsyncQwenAgent, AsyncDeepSeekAgent
+-from .vllm import VllmAgent
++import os
++from types import SimpleNamespace
+ 
+ def load_model(model_name, num_gpus=2, mode="async", **kwargs):
++    if os.environ.get("TOM_RESEARCH_BACKEND") == "1":
++        from tom_research.bridge import SharedAgent, get_client
++        return SharedAgent(SimpleNamespace(**{**kwargs, "model": get_client().config.model}))
++    from .gpt import AsyncConversationalGPTBaseAgent, ConversationalGPTBaseAgent, O1BaseAgent, O1MiniAgent
++    from .gemini import AsyncGeminiAgent
++    from .together_ai import AsyncTogetherAIAgent, AsyncLlama3Agent, AsyncQwenAgent, AsyncDeepSeekAgent
++    from .vllm import VllmAgent
+     if model_name in ["o1-preview-2024-09-12", "o1-2024-12-17", "o3-mini-2025-01-31"]:
+         model = O1BaseAgent({'model': model_name, **kwargs})
+     elif model_name in ["o1-mini-2024-09-12"]:

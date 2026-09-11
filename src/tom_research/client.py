@@ -45,7 +45,7 @@ class LLMClient:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.extend(history or [])
-        messages.append({"role": "user", "content": prompt})
+        messages.append({"role": "system" if scoring else "user", "content": prompt})
         request = dict(
             model=self.config.model, messages=messages, temperature=0 if scoring else temperature, top_p=1,
             seed=self.config.seed, max_tokens=1 if scoring else (max_tokens or self.config.max_tokens),

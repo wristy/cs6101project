@@ -34,6 +34,7 @@ def test_label_score_is_raw_probability_not_ab_normalization():
     assert requests[0]["max_tokens"] == 1
     assert requests[0]["top_p"] == 1
     assert "logit_bias" not in requests[0]
+    assert requests[0]["messages"] == [{"role": "system", "content": "A) Likely. B) Unlikely."}]
 
 
 @pytest.mark.parametrize("top", [[], [{"token": " A", "bytes": [32, 65], "logprob": -0.1}]])
