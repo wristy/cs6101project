@@ -12,3 +12,6 @@ results/**/model/
 results/**/request.json
 results/live-tests/
 shared/benchmarks/data/exploretom/*.csv
+results/**/items/**/result.json
+results/**/items/**/worker.log
+results/**/items/**/results/

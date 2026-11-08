@@ -7,6 +7,7 @@ import pytest
 
 from shared.bridge import SharedAgent, configure
 from shared.models.client import LLMClient, ModelConfig
+from shared.methods import prompts
 from shared.methods.worker import run_method
 
 
@@ -40,63 +41,112 @@ def test_official_algorithm_imports_without_gpu_dependencies(method):
     assert '"status": "ok"' in result.stdout
 
 
-def test_plain_prompt_is_free_text_without_candidates(tmp_path):
+def tomi_payload(**native):
+    tt_input = "Ava sees a basket.\n\nQuestion: Where will Ava look?\nAnswer:"
+    return {"id": "t:0", "context": "Ava sees a basket.", "question": "Where will Ava look?",
+            "target": "Ava", "choices": ["basket", "secret distractor"],
+            "native": {"thoughttracing": {"dataset": "tomi", "input": tt_input},
+                       "autotom": {"dataset_name": "ToMi-1st", **native}}}
+
+
+def test_plain_uses_thoughttracings_prompt_and_never_the_options(tmp_path):
     requests = []
     client = LLMClient(ModelConfig(), transport=lambda request: requests.append(request) or reply("basket"))
-    payload = {"context": "Ava sees a basket.", "question": "Where will Ava look?",
-               "target": "Ava", "choices": ["basket", "secret distractor"]}
-    result = run_method("plain", payload, client, tmp_path)
+    result = run_method("plain", tomi_payload(), client, tmp_path)
     assert result["answer"] == "basket"
-    assert "secret distractor" not in str(requests)
-
-
-def test_autotom_plain_baseline_receives_same_choices(tmp_path):
-    requests = []
-    client = LLMClient(ModelConfig(), transport=lambda request: requests.append(request) or reply("basket"))
-    payload = {"context": "story", "question": "Where?", "choices": ["basket", "box"],
-               "answer_format": "multiple_choice"}
-    run_method("plain", payload, client, tmp_path)
     prompt = requests[0]["messages"][-1]["content"]
-    assert "basket" in prompt and "box" in prompt
-    assert "exactly" in prompt
+    assert prompt.endswith(prompts.TOMI_ANSWER) and "secret distractor" not in prompt
+    assert requests[0]["max_tokens"] == 256
 
 
-def test_tracer_receives_only_context_and_target(tmp_path):
+def test_tracer_gets_the_native_input_and_finds_the_target_itself(tmp_path):
     observed = []
 
     class Tracer:
         def __init__(self, args):
-            assert args.n_hypotheses == 4 and not args.use_helper_llm
+            assert args.n_hypotheses == 4 and not args.use_helper_llm and args.dataset == "tomi"
 
-        def trace(self, context, target_agent):
-            observed.append((context, target_agent))
+        def trace(self, text, target_agent=None):
+            observed.append((text, target_agent))
             return "recorded trace"
 
     client = LLMClient(ModelConfig(), transport=lambda request: reply("basket"))
-    payload = {"context": "story", "question": "test question", "target": "Ava", "choices": []}
-    result = run_method("thoughttracing", payload, client, tmp_path, upstream=SimpleNamespace(Tracer=Tracer))
-    assert observed == [("story", "Ava")]
+    result = run_method("thoughttracing", tomi_payload(), client, tmp_path, upstream=SimpleNamespace(Tracer=Tracer))
+    assert observed == [(tomi_payload()["native"]["thoughttracing"]["input"], None)]
+    final = client.records[-1]["request"]["messages"][-1]["content"]
+    assert "recorded trace" in final and final.endswith(prompts.TOMI_THEREFORE)
     assert result["trace"] == "recorded trace"
-    assert "story" in client.records[-1]["request"]["messages"][-1]["content"]
-    assert "test question" in client.records[-1]["request"]["messages"][-1]["content"]
 
 
-def test_autotom_retains_automated_solver_and_maps_posterior_to_text(tmp_path):
+def test_mmtom_target_comes_from_the_question_only(tmp_path):
+    seen = {}
+
+    class Tracer:
+        def __init__(self, args):
+            pass
+
+        def identify_target(self, text):
+            seen["identify"] = text
+            return "Ava"
+
+        def trace(self, text, target_agent=None):
+            seen["target"] = target_agent
+            return "trace"
+
+    payload = tomi_payload()
+    payload["native"]["thoughttracing"] = {"dataset": "mmtom", "input":
+        "Apartment.\nQuestion: Which is true? (a) x (b) y " + prompts.MMTOM_RESPOND + "\nAnswer: "}
+    client = LLMClient(ModelConfig(), transport=lambda request: reply("(a)"))
+    run_method("thoughttracing", payload, client, tmp_path, upstream=SimpleNamespace(Tracer=Tracer))
+    assert seen == {"identify": "Question: Which is true? (a) x (b) y " + prompts.MMTOM_RESPOND + "\nAnswer: ",
+                    "target": "Ava"}
+
+
+def test_variant_must_subclass_the_upstream_tracer(tmp_path, monkeypatch):
+    import types, sys as system
+    class Tracer:
+        def __init__(self, args):
+            pass
+
+        def trace(self, text, target_agent=None):
+            return "variant trace"
+    module = types.ModuleType("fake_variant")
+    module.build = lambda upstream: type("Variant", (upstream.Tracer,), {})
+    monkeypatch.setitem(system.modules, "fake_variant", module)
+    client = LLMClient(ModelConfig(), transport=lambda request: reply("basket"))
+    result = run_method("thoughttracing", tomi_payload(), client, tmp_path,
+                        upstream=SimpleNamespace(Tracer=Tracer), variant="fake_variant")
+    assert result["trace"] == "variant trace"
+    module.build = lambda upstream: object
+    with pytest.raises(TypeError, match="subclass"):
+        run_method("thoughttracing", tomi_payload(), client, tmp_path,
+                   upstream=SimpleNamespace(Tracer=Tracer), variant="fake_variant")
+
+
+def test_autotom_runs_with_its_own_main_settings(tmp_path):
     class Solver:
         def __init__(self, **kwargs):
-            assert kwargs["model_name"] == "automated"
+            assert kwargs["model_name"] == "automated" and kwargs["nested"] is None
             assert kwargs["reduce_hypotheses"] and kwargs["back_inference"]
             assert not kwargs["no_model_adjustment"]
             assert kwargs["llm"] == kwargs["hypo_llm"] == "XiaomiMiMo/MiMo-V2.6-Pro"
+            assert kwargs["dataset_name"] == "ToMi-1st" and kwargs["precomputed_states"] == ["s"]
+            assert kwargs["episode_name"] == "t:0"
             assert "answer" not in kwargs
 
         def solve(self):
             return [0.25, 0.75], {"model": "belief"}
 
     client = LLMClient(ModelConfig(), transport=lambda request: reply("unused"))
-    payload = {"id": "test:0", "context": "story", "question": "question",
-               "target": "Ava", "choices": ["box", "basket"]}
-    upstream = SimpleNamespace(ProblemSolver=Solver, argmax=lambda values: values.index(max(values)))
-    result = run_method("autotom", payload, client, tmp_path, upstream=upstream)
-    assert result["answer"] == "basket"
+    upstream = SimpleNamespace(ProblemSolver=Solver, argmax=max, argmin=min)
+    result = run_method("autotom", tomi_payload(states=["s"], actions=["a"]), client, tmp_path, upstream=upstream)
+    assert result["answer"] == "secret distractor"
     assert result["posterior"] == [0.25, 0.75]
+
+
+def test_autotom_finds_its_prompts_for_any_model_name(tmp_path):
+    from shared.methods.worker import ROOT as REPO, prepare_autotom_runtime
+    link = prepare_autotom_runtime(tmp_path, "XiaomiMiMo/MiMo-V2.6-Pro")
+    assert link == tmp_path / "prompts/prompts_XiaomiMiMo/MiMo-V2.6-Pro"
+    assert link.resolve() == (REPO / "external/AutoToM/model/prompts/prompts_gpt-4o").resolve()
+    assert prepare_autotom_runtime(tmp_path, "XiaomiMiMo/MiMo-V2.6-Pro") == link

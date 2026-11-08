@@ -10,8 +10,9 @@ from shared.models.client import ModelConfig
 
 
 class LiveRunner:
-    def __init__(self, config: ModelConfig, item_seconds=1200):
+    def __init__(self, config: ModelConfig, variant=None, item_seconds=1200):
         self.config = config
+        self.variant = variant
         self.item_seconds = item_seconds
 
     def __call__(self, method, payload, directory):
@@ -19,7 +20,8 @@ class LiveRunner:
         request_path = directory / "request.json"
         result_path = directory / "result.json"
         request_path.write_text(json.dumps({"method": method, "payload": payload,
-                                            "model_config": asdict(self.config)}))
+                                            "model_config": asdict(self.config),
+                                            "variant": self.variant}))
         with (directory / "worker.log").open("w") as log:
             try:
                 process = subprocess.run(

@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from shared.bridge import configure
+from shared.methods import prompts
 from shared.models.client import LLMClient, ModelConfig, ProtocolError
 
 
@@ -31,60 +32,92 @@ def load_upstream(method):
     return importlib.import_module(module)
 
 
-ANSWER_PROMPT = (
-    "The short one-sentence answer specifying the most detailed location including both "
-    "the container and the place (e.g., from A in B) without any explanation is:"
-)
+def prepare_autotom_runtime(runtime, model):
+    """AutoToM reads prompts/prompts_<llm>/ relative to the working directory and ships only the
+    GPT-4o set, which it uses for every model. Point prompts/prompts_<our model> at that set."""
+    link = Path(runtime) / "prompts" / f"prompts_{model}"
+    if not link.exists():
+        link.parent.mkdir(parents=True, exist_ok=True)
+        link.symlink_to(ROOT / "external/AutoToM/model/prompts/prompts_gpt-4o", target_is_directory=True)
+    return link
 
 
-def run_method(method, payload, client, workdir, upstream=None):
+def load_variant(spec, upstream):
+    """A variant is "package.module", whose build(upstream) returns a Tracer subclass."""
+    if not spec:
+        return upstream.Tracer
+    tracer_class = importlib.import_module(spec).build(upstream)
+    if not issubclass(tracer_class, upstream.Tracer):
+        raise TypeError(f"{spec}.build() must return a subclass of ThoughtTracing's Tracer")
+    return tracer_class
+
+
+def tracer_args(client, workdir, dataset):
+    """The defaults of ThoughtTracing's command line (tracer.py), with our model and dataset."""
+    return SimpleNamespace(
+        model=client.config.model, tracing_model=client.config.model, output_dir=str(workdir),
+        run_id="run", n_hypotheses=4, dataset=dataset, use_helper_llm=False, input_is_chat=False,
+        use_perception_only=False, target_perceptions="sight", likelihood_estimate="prompting",
+        tracer_type="tracer", print=False,
+    )
+
+
+def run_method(method, payload, client, workdir, upstream=None, variant=None):
+    """Run one method on one question. The payload is Example.inference_input(): no gold answer."""
     configure(client)
     workdir = Path(workdir).resolve()
     workdir.mkdir(parents=True, exist_ok=True)
-    context, question = payload["context"], payload["question"]
+    native = payload["native"]
     if method in ("plain", "thoughttracing"):
+        dataset, tt_input = native["thoughttracing"]["dataset"], native["thoughttracing"]["input"]
         trace = ""
-        if method == "thoughttracing":
+        if method == "plain":
+            prompt = prompts.plain_prompt(dataset, tt_input)
+        else:
             upstream = upstream or load_upstream(method)
-            args = SimpleNamespace(
-                model=client.config.model, tracing_model=client.config.model,
-                output_dir=str(workdir), run_id="pilot", n_hypotheses=4,
-                dataset="tomi", use_helper_llm=False, input_is_chat=False,
-                use_perception_only=False, target_perceptions="sight",
-                likelihood_estimate="prompting", print=False,
-            )
-            tracer = upstream.Tracer(args)
-            trace = tracer.trace(context, target_agent=payload["target"])
-            if not trace.strip():
+            tracer = load_variant(variant, upstream)(tracer_args(client, workdir, dataset))
+            # As in ThoughtTracing's scripts: the whole input goes in and the tracer finds the
+            # target agent itself; on MMToM-QA the script finds it from the question alone.
+            if dataset == "mmtom":
+                target = tracer.identify_target("Question:" + tt_input.split("\nQuestion:")[-1])
+                trace = tracer.trace(tt_input, target_agent=target)
+            else:
+                trace = tracer.trace(tt_input)
+            if not isinstance(trace, str) or not trace.strip():
                 raise ProtocolError("ThoughtTracing returned an empty trace")
-        prompt = f"{context}\n\nQuestion: {question}\n\n{trace}\n\n{ANSWER_PROMPT}"
-        if payload.get("answer_format") == "multiple_choice":
-            prompt = (f"{context}\n\nQuestion: {question}\n\n{trace}\n\n"
-                      f"Choices: {json.dumps(payload['choices'])}\n"
-                      "Return exactly one choice as written, without explanation.")
-        answer = client.generate(prompt, max_tokens=256)
+            prompt = prompts.traced_prompt(dataset, tt_input, trace)
+        answer = client.generate(prompt, max_tokens=prompts.MAX_TOKENS[dataset])
         return {"status": "ok", "answer": answer, "trace": trace, "usage": client.usage()}
     if method != "autotom":
         raise ValueError(f"Unknown method {method}")
     upstream = upstream or load_upstream(method)
+    settings = native["autotom"]
     candidates = list(payload["choices"])
     if len(candidates) < 2 or len(candidates) != len(set(candidates)):
-        raise ValueError("AutoToM needs at least two distinct story-derived location hypotheses")
+        raise ValueError("AutoToM needs at least two distinct answer options")
+    question = payload["question"]
+    # The arguments of AutoToM's own main() (ProbSolver.py) with --automated.
     solver = upstream.ProblemSolver(
-        story=context, question=question, choices=candidates, K=1,
-        assigned_model=[], model_name="automated", episode_name="pilot",
-        llm=client.config.model, hypo_llm=client.config.model, verbose=False,
-        dataset_name="customize", hypo_method="guided", nested=False,
-        video_id=None, answerfunc=upstream.argmax, back_inference=True,
-        reduce_hypotheses=True, no_model_adjustment=False, recursion_depth=0,
+        story=payload["context"], question=question, choices=candidates, K=1,
+        assigned_model=["State", "Observation", "Belief", "Action", "Goal"],
+        model_name="automated", episode_name=payload["id"], llm=client.config.model,
+        hypo_llm=client.config.model, verbose=False, dataset_name=settings["dataset_name"],
+        hypo_method="guided", nested=None, video_id=None,
+        answerfunc=upstream.argmin if "LEAST likely" in question else upstream.argmax,
+        back_inference=True, reduce_hypotheses=True,
+        precomputed_states=settings.get("states"), precomputed_actions=settings.get("actions"),
+        prev_hyp=None, no_model_adjustment=False, recursion_depth=0, use_all_timesteps=False,
         seed=client.config.seed,
     )
     probabilities, model_record = solver.solve()
+    if probabilities is None:
+        raise ProtocolError("AutoToM could not answer with its chosen model")
     probabilities = np.asarray(probabilities, dtype=float)
     if (probabilities.shape != (len(candidates),) or not np.isfinite(probabilities).all()
             or (probabilities < 0).any() or not np.isclose(probabilities.sum(), 1)):
         raise ProtocolError("AutoToM returned an invalid posterior")
-    return {"status": "ok", "answer": candidates[int(probabilities.argmax())],
+    pick = int(probabilities.argmin() if "LEAST likely" in question else probabilities.argmax())
+    return {"status": "ok", "answer": candidates[pick],
             "posterior": probabilities.tolist(), "hypotheses": candidates,
             "model_record": model_record, "usage": client.usage()}
 
@@ -105,13 +138,16 @@ def main():
     workdir = args.result.resolve().parent
     runtime = workdir / "model"
     runtime.mkdir(parents=True, exist_ok=True)
+    if request["method"] == "autotom":
+        prepare_autotom_runtime(runtime, request["model_config"]["model"])
     os.chdir(runtime)
     np.random.seed(request["model_config"]["seed"])
     import random
     random.seed(request["model_config"]["seed"])
     client = LLMClient(ModelConfig(**request["model_config"]), log_path=workdir / "calls.jsonl")
     try:
-        result = run_method(request["method"], request["payload"], client, workdir)
+        result = run_method(request["method"], request["payload"], client, workdir,
+                            variant=request.get("variant"))
     except Exception as error:
         result = {"status": "error", "error": f"{type(error).__name__}: {error}", "usage": client.usage()}
     args.result.write_text(json.dumps(result, default=lambda value: value.tolist() if hasattr(value, "tolist") else str(value)))

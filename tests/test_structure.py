@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SHARED_MODULES = [
     "shared", "shared.bridge", "shared.models", "shared.models.client", "shared.methods",
     "shared.methods.worker", "shared.methods.runner", "shared.benchmarks",
-    "shared.benchmarks.paraphrased_tomi", "shared.runner", "shared.runner.evaluation",
+    "shared.benchmarks.paraphrased_tomi", "shared.benchmarks.bigtom", "shared.benchmarks.mmtom",
+    "shared.benchmarks.exploretom", "shared.methods.prompts", "shared.runner.scoring",
+    "shared.runner.experiment", "experiments.exp1_baseline.run", "shared.runner", "shared.runner.evaluation",
     "shared.tracing", "shared.analysis", "experiments",
 ]
 

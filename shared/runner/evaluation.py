@@ -1,103 +1,101 @@
-"""Free-text scoring and append-only, resumable pilot results."""
+"""Run one arm (a method, model and optional ThoughtTracing variant) over frozen questions.
 
-from dataclasses import asdict
+Results are append-only and resumable: each finished question is one line in
+<directory>/predictions.jsonl, written before the next starts, and a rerun skips finished
+questions. manifest.json records the arm and the exact question list; a rerun with a different
+one is refused, so one directory always holds one arm.
+"""
+
+from collections import defaultdict
 from hashlib import sha256
 import json
 import os
 from pathlib import Path
 import time
 
+from shared.runner.scoring import score
 
-def score_answer(prediction, answer):
-    return bool(isinstance(prediction, str) and answer.strip() and answer.lower() in prediction.lower())
+METHODS = {"plain", "thoughttracing", "autotom"}
 
 
-def run_pilot(examples, methods, runner, directory, config):
+def _read_records(path):
+    if not path.exists():
+        return []
+    try:
+        return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Corrupt results; inspect {path} before resuming") from error
+
+
+def run_arm(examples, arm, runner, directory, session_seconds=14400):
+    """arm = {"name", "method", "model", "variant" (optional), ...}; runner(method, payload, dir)."""
+    if arm["method"] not in METHODS:
+        raise ValueError(f"Unknown method {arm['method']}")
+    if arm.get("variant") and arm["method"] != "thoughttracing":
+        raise ValueError("Variants change ThoughtTracing only")
+    if len({item.id for item in examples}) != len(examples):
+        raise ValueError("Duplicate question IDs")
     directory = Path(directory).resolve()
-    if len({item.id for item in examples}) != len(examples) or len(set(methods)) != len(methods):
-        raise ValueError("Duplicate item IDs or methods")
-    if any(method not in {"plain", "thoughttracing", "autotom"} for method in methods):
-        raise ValueError("Unknown method")
-    track = config.get("track")
-    if track is not None:
-        formats = {"thoughttracing": "free_text", "autotom": "multiple_choice"}
-        if (track not in formats or any(method not in {"plain", track} for method in methods)
-                or any(item.answer_format != formats[track] for item in examples)):
-            raise ValueError("Methods or dataset format do not match the track")
-    manifest = json.loads(json.dumps({"config": config, "methods": methods,
-                                     "examples": [asdict(item) for item in examples]}))
     directory.mkdir(parents=True, exist_ok=True)
+    manifest = {"arm": arm, "ids": [item.id for item in examples]}
     manifest_path = directory / "manifest.json"
     if manifest_path.exists():
-        if json.loads(manifest_path.read_text()) != manifest:
+        if json.loads(manifest_path.read_text()) != json.loads(json.dumps(manifest)):
             raise ValueError("Run manifest differs; use a new result directory")
     else:
-        with manifest_path.open("x") as stream:
-            json.dump(manifest, stream, indent=2)
+        manifest_path.write_text(json.dumps(manifest, indent=1) + "\n")
     results_path = directory / "predictions.jsonl"
-    try:
-        results = [json.loads(line) for line in results_path.read_text().splitlines()] if results_path.exists() else []
-        completed = {(record["method"], record["id"]) for record in results}
-        expected = {(method, item.id) for method in methods for item in examples}
-        if len(completed) != len(results) or not completed <= expected:
-            raise ValueError("Duplicate or unexpected results")
-    except (ValueError, KeyError) as error:
-        raise ValueError("Corrupt results; inspect predictions.jsonl before resuming") from error
+    records = _read_records(results_path)
+    done = {record["id"] for record in records}
+    if len(done) != len(records) or not done <= set(manifest["ids"]):
+        raise ValueError(f"Duplicate or unexpected results; inspect {results_path}")
     started = time.monotonic()
-    session_seconds = config.get("session_seconds", 14400)
     for item in examples:
-        for method in methods:
-            if (method, item.id) in completed:
-                continue
-            if time.monotonic() - started >= session_seconds:
-                return results
-            key = sha256(f"{method}:{item.id}".encode()).hexdigest()[:16]
-            item_dir = directory / method / key
-            item_dir.mkdir(parents=True, exist_ok=True)
-            item_started = time.monotonic()
-            try:
-                result = runner(method, item.inference_input(), item_dir)
-                if result.get("status") == "ok" and not str(result.get("answer", "")).strip():
-                    result["status"] = "invalid"
-            except Exception as error:
-                result = {"status": "error", "error": f"{type(error).__name__}: {error}"}
-            if item.answer_format == "multiple_choice" and result.get("status") == "ok":
-                if result.get("answer", "").strip() not in item.choices:
-                    result["status"] = "invalid"
-            correct = (result.get("answer", "").strip() == item.answer
-                       if item.answer_format == "multiple_choice" and isinstance(result.get("answer"), str)
-                       else score_answer(result.get("answer"), item.answer))
-            record = {**result, "method": method, "id": item.id, "belief_type": item.belief_type,
-                      "track": config.get("track"), "answer_format": item.answer_format,
-                      "gold": item.answer, "seconds": time.monotonic() - item_started,
-                      "correct": result.get("status") == "ok" and correct}
-            with results_path.open("a") as stream:
-                stream.write(json.dumps(record) + "\n")
-                stream.flush()
-                os.fsync(stream.fileno())
-            results.append(record)
-            completed.add((method, item.id))
-    return results
+        if item.id in done:
+            continue
+        if time.monotonic() - started >= session_seconds:
+            break
+        item_dir = directory / "items" / sha256(item.id.encode()).hexdigest()[:16]
+        item_dir.mkdir(parents=True, exist_ok=True)
+        item_started = time.monotonic()
+        try:
+            result = runner(arm["method"], item.inference_input(), item_dir)
+        except Exception as error:
+            result = {"status": "error", "error": f"{type(error).__name__}: {error}"}
+        graded = (score(item, arm["method"], result.get("answer")) if result.get("status") == "ok"
+                  else {"status": result.get("status", "error"), "correct": False, "choice": None})
+        record = {**result, **graded, "arm": arm["name"], "method": arm["method"], "id": item.id,
+                  "benchmark": item.benchmark, "category": item.category,
+                  "belief_type": item.belief_type, "gold": item.answer,
+                  "seconds": time.monotonic() - item_started}
+        with results_path.open("a") as stream:
+            stream.write(json.dumps(record, default=str) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        records.append(record)
+        done.add(item.id)
+    return records
 
 
 def summarize(records):
-    reports = []
-    groups = {(record.get("track") or "legacy", record["method"]) for record in records}
-    for track, method in sorted(groups):
-        selected = [record for record in records if record["method"] == method
-                    and (record.get("track") or "legacy") == track]
-        correct = sum(record["correct"] for record in selected)
-        synthetic = sum(record["status"] == "synthetic" for record in selected)
-        report = {"track": track, "method": method, "total": len(selected), "correct": correct,
-                  "accuracy": None if synthetic else correct / len(selected),
-                  "errors": sum(record["status"] == "error" for record in selected),
-                  "invalid": sum(record["status"] == "invalid" for record in selected),
-                  "synthetic": synthetic, "seconds": sum(record["seconds"] for record in selected)}
+    """One row per arm and benchmark: accuracy, its splits, failures and cost per question."""
+    groups = defaultdict(list)
+    for record in records:
+        groups[(record["arm"], record["benchmark"])].append(record)
+    rows = []
+    for (arm, benchmark), selected in sorted(groups.items()):
+        total = len(selected)
+        row = {"arm": arm, "benchmark": benchmark, "method": selected[0]["method"], "total": total,
+               "correct": sum(r["correct"] for r in selected),
+               "errors": sum(r["status"] == "error" for r in selected),
+               "invalid": sum(r["status"] == "invalid" for r in selected),
+               "seconds": sum(r["seconds"] for r in selected)}
+        row["accuracy"] = row["correct"] / total
         for key in ("calls", "prompt_tokens", "completion_tokens", "usage_missing"):
-            report[key] = sum(record.get("usage", {}).get(key, 0) for record in selected)
-        for belief in ("true_belief", "false_belief"):
-            subset = [record for record in selected if record["belief_type"] == belief]
-            report[belief + "_accuracy"] = (sum(record["correct"] for record in subset) / len(subset)
-                                            if subset and not synthetic else None)
-        reports.append(report)
-    return reports
+            row[key] = sum(r.get("usage", {}).get(key, 0) for r in selected)
+        for field in ("belief_type", "category"):
+            for value in sorted({r[field] for r in selected if r[field]}):
+                subset = [r for r in selected if r[field] == value]
+                row[f"accuracy[{value}]"] = sum(r["correct"] for r in subset) / len(subset)
+        rows.append(row)
+    return rows

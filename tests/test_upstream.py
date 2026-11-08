@@ -25,6 +25,7 @@ from shared.models.client import LLMClient, ModelConfig
 from shared.methods.worker import run_method
 
 outputs = iter([
+    "Target character: Ava",
     "Ava is in the kitchen. The apple is in the basket.<no action>",
     "Ava sees the apple in the basket.",
     "Ava is in the kitchen.",
@@ -36,15 +37,20 @@ def transport(request):
     return {"choices": [{"message": {"content": next(outputs)}, "finish_reason": "stop"}],
             "usage": {"prompt_tokens": 10, "completion_tokens": 10}}
 client = LLMClient(ModelConfig(), transport=transport)
-payload = {"context": "Ava is in the kitchen. The apple is in the basket.",
-           "question": "Where will Ava look for the apple?", "target": "Ava", "choices": ["basket"]}
+context = "Ava is in the kitchen. The apple is in the basket."
+question = "Where will Ava look for the apple?"
+payload = {"id": "t:0", "context": context, "question": question, "target": "Ava", "choices": ["basket"],
+           "native": {"thoughttracing": {"dataset": "tomi",
+                                         "input": f"{context}\\n\\nQuestion: {question}\\nAnswer:"}}}
 result = run_method("thoughttracing", payload, client, Path(sys.argv[1]))
 assert result["status"] == "ok"
 assert result["answer"] == "In the basket in the kitchen."
-assert client.usage()["calls"] == 6
+assert client.usage()["calls"] == 7
 saved = json.loads(next(Path(sys.argv[1]).glob("tracer-*.jsonl")).read_text())
 assert len(saved["hypotheses"]) == 1
-assert "Where will Ava look" not in str([record["request"] for record in client.records[:-1]])
+# Only target identification and the final answer see the question, as upstream.
+assert "Where will Ava look" in str(client.records[0]["request"])
+assert "Where will Ava look" not in str([record["request"] for record in client.records[1:-1]])
 ''', tmp_path)
 
 

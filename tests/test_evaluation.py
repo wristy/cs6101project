@@ -1,91 +1,76 @@
-from dataclasses import replace
+"""The arm runner: resumable records, manifest guard, errors kept, summaries per arm."""
+
 import json
 
 import pytest
 
 from shared.benchmarks.common import Example
-from shared.runner.evaluation import run_pilot, score_answer, summarize
+from shared.runner.evaluation import run_arm, summarize
+
+ARM = {"name": "plain", "method": "plain"}
 
 
-def example():
-    return Example(id="test:1", benchmark="paraphrased_tomi", context="Ava put the apple in the basket.",
+def example(id="test:1", answer="basket", category="first_order_0_no_tom"):
+    return Example(id=id, benchmark="paraphrased_tomi", context="Ava put the apple in the basket.",
                    question="Where will Ava look for the apple?", choices=("basket", "box"),
-                   target="Ava", answer="basket", category="first_order_0_no_tom",
-                   belief_type="true_belief", answer_format="free_text", story_id="story")
+                   target="Ava", answer=answer, category=category, belief_type="true_belief",
+                   answer_format="free_text", native={"thoughttracing": {}, "autotom": {}})
 
 
-def test_free_text_scoring_matches_released_case_insensitive_rule():
-    assert score_answer("In the BASKET in the kitchen.", "basket")
-    assert not score_answer("In the box.", "basket")
-    assert not score_answer("", "basket")
-    assert not score_answer(None, "basket")
+def test_records_are_scored_and_payload_has_no_gold(tmp_path):
+    def runner(method, payload, directory):
+        assert "answer" not in payload and method == "plain"
+        return {"status": "ok", "answer": "In the basket.", "usage": {"calls": 1}}
+    record = run_arm([example()], ARM, runner, tmp_path)[0]
+    assert record["correct"] and record["gold"] == "basket" and record["arm"] == "plain"
+    assert record["benchmark"] == "paraphrased_tomi" and record["category"] == "first_order_0_no_tom"
 
 
-def test_choice_scoring_does_not_accept_mentions_of_both_options(tmp_path):
-    item = replace(example(), answer_format="multiple_choice")
-    runner = lambda *args: {"status": "ok", "answer": "basket or box"}
-    record = run_pilot([item], ["plain"], runner, tmp_path, {"track": "autotom"})[0]
-    assert not record["correct"]
-    assert record["status"] == "invalid"
-    assert record["track"] == "autotom"
-
-
-def test_track_rejects_wrong_dataset_format_and_method(tmp_path):
-    with pytest.raises(ValueError, match="track"):
-        run_pilot([example()], ["plain", "autotom"], None, tmp_path, {"track": "autotom"})
-    with pytest.raises(ValueError, match="track"):
-        run_pilot([example()], ["autotom"], None, tmp_path, {"track": "thoughttracing"})
-
-
-def test_summary_keeps_plain_baselines_separate(tmp_path):
-    runner = lambda *args: {"status": "ok", "answer": "basket"}
-    free_text = run_pilot([example()], ["plain"], runner, tmp_path / "tt", {"track": "thoughttracing"})
-    choice = run_pilot([replace(example(), answer_format="multiple_choice")], ["plain"],
-                       runner, tmp_path / "auto", {"track": "autotom"})
-    reports = summarize(free_text + choice)
-    assert len(reports) == 2
-    assert {report["track"] for report in reports} == {"thoughttracing", "autotom"}
-
-
-def test_resume_reuses_records_and_payload_has_no_gold(tmp_path):
+def test_resume_skips_finished_questions_and_guards_manifest(tmp_path):
     seen = []
 
     def runner(method, payload, directory):
-        assert "answer" not in payload
-        seen.append((method, payload))
-        return {"answer": "basket", "usage": {"calls": 2}, "status": "ok"}
-
-    config = {"mode": "offline", "seed": 42}
-    first = run_pilot([example()], ["plain", "autotom"], runner, tmp_path, config)
-    assert len(seen) == 2
-    assert first == run_pilot([example()], ["plain", "autotom"], runner, tmp_path, config)
-    assert len(seen) == 2
+        seen.append(payload["id"])
+        return {"status": "ok", "answer": "basket"}
+    items = [example("test:1"), example("test:2")]
+    first = run_arm(items, ARM, runner, tmp_path)
+    assert run_arm(items, ARM, runner, tmp_path) == first and seen == ["test:1", "test:2"]
     with pytest.raises(ValueError, match="manifest"):
-        run_pilot([example()], ["plain", "autotom"], runner, tmp_path, {**config, "seed": 43})
+        run_arm(items, {**ARM, "name": "other"}, runner, tmp_path)
+    with pytest.raises(ValueError, match="manifest"):
+        run_arm(items[:1], ARM, runner, tmp_path)
 
 
-def test_errors_remain_in_results_and_summary(tmp_path):
+def test_errors_stay_in_results_and_summary(tmp_path):
     def broken(method, payload, directory):
         raise RuntimeError("backend unavailable")
-
-    records = run_pilot([example()], ["autotom"], broken, tmp_path, {"mode": "offline"})
-    report = summarize(records)[0]
-    assert report["total"] == 1
-    assert report["errors"] == 1
-    assert report["correct"] == 0
-    assert report["accuracy"] == 0
-    assert records[0]["status"] == "error"
+    records = run_arm([example()], {"name": "tt", "method": "thoughttracing"}, broken, tmp_path)
+    row = summarize(records)[0]
+    assert records[0]["status"] == "error" and "backend unavailable" in records[0]["error"]
+    assert (row["total"], row["errors"], row["correct"], row["accuracy"]) == (1, 1, 0, 0)
 
 
-def test_duplicate_ids_rejected(tmp_path):
+def test_summary_splits_by_belief_and_category(tmp_path):
+    runner = lambda method, payload, directory: {"status": "ok", "answer": "basket", "usage": {"calls": 2}}
+    items = [example("test:1"), example("test:2", answer="box", category="second_order_0_no_tom")]
+    row = summarize(run_arm(items, ARM, runner, tmp_path))[0]
+    assert row["accuracy"] == 0.5 and row["calls"] == 4
+    assert row["accuracy[first_order_0_no_tom]"] == 1 and row["accuracy[second_order_0_no_tom]"] == 0
+
+
+def test_rejects_duplicates_unknown_methods_and_variants_outside_tracing(tmp_path):
     with pytest.raises(ValueError, match="Duplicate"):
-        run_pilot([example(), example()], ["plain"], None, tmp_path, {})
+        run_arm([example(), example()], ARM, None, tmp_path)
+    with pytest.raises(ValueError, match="Unknown method"):
+        run_arm([example()], {"name": "x", "method": "cot"}, None, tmp_path)
+    with pytest.raises(ValueError, match="Variants"):
+        run_arm([example()], {"name": "x", "method": "plain", "variant": "v"}, None, tmp_path)
 
 
 def test_refuses_corrupt_result_file(tmp_path):
     runner = lambda method, payload, directory: {"answer": "basket", "status": "ok"}
-    run_pilot([example()], ["plain"], runner, tmp_path, {})
+    run_arm([example()], ARM, runner, tmp_path)
     with (tmp_path / "predictions.jsonl").open("a") as stream:
         stream.write("{broken")
-    with pytest.raises(ValueError, match="results"):
-        run_pilot([example()], ["plain"], runner, tmp_path, {})
+    with pytest.raises(ValueError, match="Corrupt"):
+        run_arm([example()], ARM, runner, tmp_path)
