@@ -24,6 +24,13 @@ EMBEDDING_MODEL = {"model": "Qwen/Qwen3-Embedding-8B", "base_url": "https://api.
                    "key_env": "DEEPINFRA_API_KEY"}
 
 
+# US$ per million tokens, as quoted on 8 November (DeepInfra and OpenAI price pages). Used only to
+# project costs from a pilot; check the pages again before a large run. TypeSafe publishes no
+# per-token price (only input tokens are billable), so Jev cost is reported as tokens.
+PRICES = {"mimo": {"input": 0.39, "output": 0.78}, "gpt6sol": {"input": 2.0, "output": 10.0},
+          "embedding": {"input": 0.042}}
+
+
 def model_config(name, **overrides):
     if name not in CHAT_MODELS:
         raise KeyError(f"Unknown model {name!r}; choose from {sorted(CHAT_MODELS)}")
