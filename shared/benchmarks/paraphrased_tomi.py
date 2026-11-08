@@ -1,36 +1,28 @@
-"""Load ThoughtTracing's released ParaphrasedToMi text and trace files.
+"""ParaphrasedToMi as released with ThoughtTracing: 200 first- and second-order questions.
 
-Step 3 extends this to first- and second-order questions and freezes the 200-question set."""
+ThoughtTracing shuffles the test split with pandas .sample(n=2000, random_state=123) and takes the
+first N questions of each type in that order (revised_tomi/test_tomi.py). We do the same with
+N = 25 for each of the eight first/second-order types, which gives 100 first-order and 100
+second-order questions, each split 50 false belief / 50 true belief. Options are the locations
+named in the story, as ThoughtTracing derives its candidates; answers are free text.
+"""
 
-from dataclasses import asdict, dataclass
 from hashlib import sha256
-from pathlib import Path
 import re
 
-
-@dataclass(frozen=True)
-class Example:
-    id: str
-    story_id: str
-    context: str
-    question: str
-    choices: tuple[str, ...]
-    target: str
-    answer: str
-    question_type: str
-    belief_type: str
-    answer_format: str = "free_text"
-
-    def inference_input(self):
-        return {key: value for key, value in asdict(self).items()
-                if key in {"id", "context", "question", "choices", "target", "answer_format"}}
+from shared.benchmarks.common import EXTERNAL, Example, select_frozen
 
 
-def load_examples(path):
-    path = Path(path)
+SOURCE = EXTERNAL / "thought-tracing/data/paraphrased_tomi/test.txt"
+TYPES = tuple(f"{order}_order_{variant}" for order in ("first", "second")
+              for variant in ("0_tom", "1_tom", "0_no_tom", "1_no_tom"))
+QUESTION_PATTERNS = (re.compile(r"Where will (\w+) look for .+\?"),
+                     re.compile(r"Where does (\w+) think that \w+ searches for .+\?"))
+
+
+def _records(path):
     traces = path.with_suffix(".trace").read_text().splitlines()
-    records = []
-    sentences = []
+    records, sentences = [], []
     for line in path.read_text().splitlines():
         if not line.strip():
             continue
@@ -40,26 +32,47 @@ def load_examples(path):
             continue
         question, answer, supporting = line.split("\t")
         int(supporting)
-        question = question.split(" ", 1)[1].replace("_", " ")
-        choices = tuple(dict.fromkeys(
-            sentence.strip(".").rsplit(" ", 1)[-1].replace("_", " ")
-            for sentence in sentences
-        ))
-        context = " ".join(sentences).replace("_", " ")
-        records.append((context, question, choices, answer.replace("_", " ")))
+        records.append((sentences, question.split(" ", 1)[1], answer.replace("_", " ")))
         sentences = []
     if sentences or len(records) != len(traces):
         raise ValueError("Dataset and trace counts differ or story is unfinished")
+    return records, traces
+
+
+def load_all(source=SOURCE):
+    """Every first- and second-order question, with ids "<split>:<question index>"."""
+    records, traces = _records(source)
     examples = []
-    for index, ((context, question, choices, answer), trace) in enumerate(zip(records, traces)):
+    for index, ((sentences, raw_question, answer), trace) in enumerate(zip(records, traces)):
         question_type = trace.split(",")[-2]
-        target_match = re.fullmatch(r"Where will (.+?) look for .+\?", question)
-        if not question_type.startswith("first_order_") or target_match is None:
+        if question_type not in TYPES:
             continue
-        belief_type = "true_belief" if question_type.endswith("_no_tom") else "false_belief"
+        context = " ".join(sentences).replace("_", " ")
+        # ThoughtTracing's question cleaning and prompt (revised_tomi/test_tomi.py).
+        question = raw_question.replace("_", " ").replace("-", " - ")
+        match = next((m for pattern in QUESTION_PATTERNS if (m := pattern.fullmatch(question))), None)
+        if match is None:
+            raise ValueError(f"{source.stem}:{index}: unexpected question {question!r}")
+        choices = tuple(dict.fromkeys(sentence.strip(".").rsplit(" ", 1)[-1].replace("_", " ")
+                                      for sentence in sentences))
+        order = question_type.split("_", 1)[0]
         examples.append(Example(
-            id=f"{path.stem}:{index}", story_id=sha256(context.encode()).hexdigest(),
-            context=context, question=question, choices=choices, target=target_match[1],
-            answer=answer, question_type=question_type, belief_type=belief_type,
+            id=f"{source.stem}:{index}", benchmark="paraphrased_tomi", context=context,
+            question=question, choices=choices, answer=answer, target=match[1],
+            category=question_type,
+            belief_type="true_belief" if question_type.endswith("_no_tom") else "false_belief",
+            answer_format="free_text", story_id=sha256(context.encode()).hexdigest(),
+            native={"thoughttracing": {"dataset": "tomi",
+                                       "input": f"{context.strip('.')}.\n\nQuestion: {question}\nAnswer:"},
+                    "autotom": {"dataset_name": "ToMi-1st" if order == "first" else "ToMi-2nd"}},
         ))
     return examples
+
+
+def load_examples(path):
+    """Kept for older callers: every first- and second-order question in a file."""
+    return load_all(path)
+
+
+def load(source=SOURCE):
+    return select_frozen("paraphrased_tomi", load_all(source), source)

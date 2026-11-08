@@ -11,3 +11,4 @@ results/**/calls.jsonl
 results/**/model/
 results/**/request.json
 results/live-tests/
+shared/benchmarks/data/exploretom/*.csv

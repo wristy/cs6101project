@@ -3,14 +3,15 @@ import json
 
 import pytest
 
-from shared.benchmarks.paraphrased_tomi import Example
+from shared.benchmarks.common import Example
 from shared.runner.evaluation import run_pilot, score_answer, summarize
 
 
 def example():
-    return Example("test:1", "story", "Ava put the apple in the basket.",
-                   "Where will Ava look for the apple?", ("basket", "box"),
-                   "Ava", "basket", "first_order_0_no_tom", "true_belief")
+    return Example(id="test:1", benchmark="paraphrased_tomi", context="Ava put the apple in the basket.",
+                   question="Where will Ava look for the apple?", choices=("basket", "box"),
+                   target="Ava", answer="basket", category="first_order_0_no_tom",
+                   belief_type="true_belief", answer_format="free_text", story_id="story")
 
 
 def test_free_text_scoring_matches_released_case_insensitive_rule():
