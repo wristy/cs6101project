@@ -10,6 +10,19 @@ index 3c62a11..85c4024 100644
  import itertools
  from ElementExtractor import *
  from utils import *
+diff --git a/model/ProbSolver.py b/model/ProbSolver.py
+index 29d27ce..459d1ce 100644
+--- a/model/ProbSolver.py
++++ b/model/ProbSolver.py
+@@ -668,7 +668,7 @@ class ProblemSolver:
+             )
+ 
+         else:
+-            if not args.back_inference:
++            if not self.back_inference:  # upstream reads the __main__ global `args`
+                 start_timestep = 0
+                 print(f"Starting from timestep {start_timestep}")
+ 
 diff --git a/model/probs.py b/model/probs.py
 index 4282e36..e501fd1 100644
 --- a/model/probs.py
