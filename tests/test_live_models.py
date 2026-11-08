@@ -51,7 +51,7 @@ def test_embeddings_rank_a_paraphrase_above_an_unrelated_sentence(require_key):
 
 
 def test_jev_noul_separates_true_from_false(require_key):
-    require_key("TYPESAFE_API_KEY")
+    require_key("JEV_API_KEY")
     client = JevClient(max_calls=2, log_path=LOGS / "jev.jsonl")
     state = "Sally put the apple in the basket and left. Nobody touched the basket."
     likely = client.noul(state, "Sally believes the apple is in the basket.")

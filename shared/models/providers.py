@@ -5,7 +5,7 @@ Settings agreed on 8 November:
 - GPT-6 Sol on OpenAI's own API: reasoning effort "none" (which allows temperature 0 and logprobs);
   it needs max_completion_tokens and at least ~16 output tokens even for a one-letter answer.
 - Qwen3-Embedding-8B on DeepInfra for Experiment 5.
-Jev and Noul (TypeSafe, one key: TYPESAFE_API_KEY) are added with Experiments 2a and 4.
+Jev and Noul (TypeSafe, one key: JEV_API_KEY) are added with Experiments 2a and 4.
 """
 
 from dataclasses import replace

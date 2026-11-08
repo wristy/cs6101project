@@ -3,8 +3,8 @@
 POST https://api.typesafe.ai/v1/systemone with a `state` (what the questions are about) and
 named `questions`. We use two question types (docs.typesafe.ai/api):
 - noul:  {"type": "noul", "instructions": ...} -> {"noul": P(yes/true)}           (Experiment 4)
-- score: {"type": "score", "instructions": ..., "criteria": [ordered levels]}
-         -> {"score", "confidence", "probabilities": {"0": p, ...}}               (Experiment 2a)
+- choice: {"type": "choice", "instructions": ..., "criteria": {name: description}}
+          -> {"choice": name, "confidence", "probabilities": {name: p}}          (Experiment 2a)
 The API has no seed or temperature. We pin a model version so runs are reproducible as far as
 the API allows; the model name the server reports is logged with every call.
 """
@@ -22,7 +22,7 @@ TRANSIENT_STATUS = {429, 500, 502, 503, 529}
 
 
 class JevClient:
-    def __init__(self, model=MODEL, key_env="TYPESAFE_API_KEY", transport=None, log_path=None,
+    def __init__(self, model=MODEL, key_env="JEV_API_KEY", transport=None, log_path=None,
                  max_calls=500, timeout=60, max_retries=2):
         self.model, self.max_calls, self.max_retries = model, max_calls, max_retries
         self.records = []
@@ -82,12 +82,15 @@ class JevClient:
             raise ValueError(f"Invalid noul answer: {answer}")
         return float(probability)
 
-    def score(self, state, instructions, levels):
-        """Probability over ordered levels; returns the full answer (score, probabilities, ...)."""
-        answer = self.ask(state, {"q": {"type": "score", "instructions": instructions,
-                                        "criteria": list(levels)}})["q"]
-        if answer.get("type") != "score" or "probabilities" not in answer:
-            raise ValueError(f"Invalid score answer: {answer}")
+    def choice(self, state, instructions, options):
+        """Probability over unordered named options ({name: description}); returns the full answer."""
+        options = dict(options)
+        answer = self.ask(state, {"q": {"type": "choice", "instructions": instructions,
+                                        "criteria": options}})["q"]
+        probabilities = answer.get("probabilities")
+        if (answer.get("type") != "choice" or not isinstance(probabilities, dict)
+                or set(probabilities) != set(options) or answer.get("choice") not in options):
+            raise ValueError(f"Invalid choice answer: {answer}")
         return answer
 
     def usage(self):

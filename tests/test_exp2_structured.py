@@ -48,12 +48,15 @@ def test_jev_choice_uses_the_story_and_takes_the_most_probable_model():
 
     def transport(request):
         sent.append(request)
-        return {"answers": {"q": {"type": "score", "score": 1.9, "confidence": 0.5,
-                                  "probabilities": {"0": 0.1, "1": 0.2, "2": 0.6, "3": 0.1}}}}
+        return {"answers": {"q": {"type": "choice", "choice": "belief_goal", "confidence": 0.5,
+                                  "probabilities": {"belief": 0.1, "goal": 0.2, "belief_goal": 0.6,
+                                                    "higher_order": 0.1}}}}
     model, record = v2a.choose_model(JevClient(transport=transport), "Ava walks to the kitchen.")
     assert model.name == "belief_goal" and record["probabilities"]["belief_goal"] == 0.6
     assert sent[0]["state"] == "Ava walks to the kitchen."
-    assert sent[0]["questions"]["q"]["criteria"] == [m.description for m in v2a.MODELS]
+    assert sent[0]["questions"]["q"]["type"] == "choice"
+    assert sent[0]["questions"]["q"]["criteria"] == {m.name: m.description for m in v2a.MODELS}
+    assert record["jev_choice"] == "belief_goal"
 
 
 def test_list_schema_and_json_parsing():

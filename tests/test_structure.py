@@ -46,7 +46,7 @@ def test_patches_route_to_shared_bridge():
 
 def test_env_example_names_every_key_and_env_is_ignored():
     example = (ROOT / ".env.example").read_text()
-    for key in ["DEEPINFRA_API_KEY", "OPENAI_API_KEY", "TYPESAFE_API_KEY"]:
+    for key in ["DEEPINFRA_API_KEY", "OPENAI_API_KEY", "JEV_API_KEY"]:
         assert key in example
     assert ".env" in (ROOT / ".gitignore").read_text().splitlines()
 

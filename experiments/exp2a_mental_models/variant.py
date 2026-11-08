@@ -1,8 +1,8 @@
 """Experiment 2a: Jev picks a mental model from the story; hypotheses fill that model's slots.
 
 Before tracing, Jev reads the story only (never the question or the assumption sentence) and
-returns a probability for each of four AutoToM-style mental models, asked with Jev's score
-question over the models ordered from simplest to richest. We take the most probable model and
+returns a probability for each of four AutoToM-style mental models, asked with Jev's choice
+question (unordered named options, each with a description). We take the most probable model and
 keep the whole distribution in the trace. The model fixes the slots every hypothesis fills, and
 plain code joins the slots into one sentence for the rest of ThoughtTracing.
 """
@@ -53,12 +53,12 @@ JEV_INSTRUCTIONS = ("Which kind of mental model is needed to understand the main
 
 
 def choose_model(jev, story):
-    answer = jev.score(story, JEV_INSTRUCTIONS, [model.description for model in MODELS])
-    probabilities = {int(level): p for level, p in answer["probabilities"].items()}
-    best = max(probabilities, key=probabilities.get)
-    return MODELS[best], {"probabilities": {MODELS[i].name: p for i, p in probabilities.items()},
-                          "score": answer.get("score"), "confidence": answer.get("confidence"),
-                          "chosen": MODELS[best].name}
+    answer = jev.choice(story, JEV_INSTRUCTIONS, {model.name: model.description for model in MODELS})
+    probabilities = answer["probabilities"]
+    # Take the argmax ourselves (ties go to the simpler model) and keep Jev's own pick for the record.
+    best = max(MODELS, key=lambda model: probabilities[model.name])
+    return best, {"probabilities": probabilities, "jev_choice": answer["choice"],
+                  "confidence": answer.get("confidence"), "chosen": best.name}
 
 
 def build(upstream):
