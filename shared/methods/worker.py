@@ -29,7 +29,16 @@ def load_upstream(method):
     else:
         raise ValueError(f"Unknown upstream method: {method}")
     sys.path.insert(0, str(source))
-    return importlib.import_module(module)
+    loaded = importlib.import_module(module)
+    if method == "autotom":
+        # AutoToM still has direct OpenAI calls on paths we do not use (video, o3-mini, logit
+        # tests). Make any such call fail loudly instead of reaching a real API.
+        def unpatched(*args, **kwargs):
+            raise RuntimeError("An unpatched AutoToM function tried to call OpenAI directly")
+        for name in ("utils", "probs"):
+            if name in sys.modules:
+                sys.modules[name].OpenAI = unpatched
+    return loaded
 
 
 def prepare_autotom_runtime(runtime, model):

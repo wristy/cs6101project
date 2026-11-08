@@ -108,8 +108,14 @@ class LLMClient:
             raise ProtocolError("Unexpected thinking output in non-thinking mode")
         return text.strip()
 
-    def score_label(self, prompt, label="A"):
-        """P(A) under the agreed rule: P(A) if the model wrote A, 1 - P(B) if it wrote B."""
+    def score_label(self, prompt, label="A", fallback=None):
+        """P(A) under the agreed rule: P(A) if the model wrote A, 1 - P(B) if it wrote B.
+
+        If the first token is neither letter (e.g. "The"), we do what AutoToM does with GPT-4o:
+        use A's logprob if A is among the returned alternatives, and otherwise return
+        `fallback` (AutoToM uses 0.1). Without a fallback that case is an error. Every fallback
+        is counted in usage()["score_fallbacks"] and marked in the call log.
+        """
         if label != "A":
             raise ValueError("Only P(A) for an A/B question is supported")
         reply = self._request(prompt, scoring=True)
@@ -125,11 +131,26 @@ class LLMClient:
             return probability
         if token == "B":
             return 1 - probability
-        raise ProtocolError(f"Expected the answer A or B, got {token!r}")
+        for alternative in first.get("top_logprobs") or []:
+            if alternative.get("token", "").strip() == "A" and math.isfinite(alternative.get("logprob", math.nan)):
+                self._note_fallback("top_logprobs", token)
+                return min(math.exp(alternative["logprob"]), 1.0)
+        if fallback is None:
+            raise ProtocolError(f"Expected the answer A or B, got {token!r}")
+        self._note_fallback("constant", token)
+        return fallback
+
+    def _note_fallback(self, kind, token):
+        self.records[-1]["score_fallback"] = kind
+        if self.log_path:
+            with self.log_path.open("a") as stream:
+                stream.write(json.dumps({"score_fallback": kind, "first_token": token,
+                                         "call": len(self.records) - 1}) + "\n")
 
     def usage(self):
         usage = {"calls": len(self.records), "prompt_tokens": 0, "completion_tokens": 0,
-                 "seconds": sum(record["seconds"] for record in self.records), "usage_missing": 0}
+                 "seconds": sum(record["seconds"] for record in self.records), "usage_missing": 0,
+                 "score_fallbacks": sum("score_fallback" in record for record in self.records)}
         for record in self.records:
             reported = record.get("response", {}).get("usage")
             if not reported:

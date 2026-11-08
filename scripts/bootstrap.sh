@@ -16,6 +16,11 @@ prepare_source() {
     if git -C "$destination" apply --reverse --check "$patch" 2>/dev/null; then
         printf 'Compatibility patch already present: %s\n' "$name"
     else
+        if ! git -C "$destination" apply --check "$patch" 2>/dev/null; then
+            # An older version of our patch is applied: go back to the pinned revision first.
+            printf 'Updating compatibility patch: %s\n' "$name"
+            git -C "$destination" checkout -- .
+        fi
         git -C "$destination" apply --check "$patch"
         git -C "$destination" apply "$patch"
     fi

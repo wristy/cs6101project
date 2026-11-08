@@ -101,3 +101,24 @@ def test_embeddings_keep_input_order_and_cosine():
     assert vectors == [[1.0, 0.0], [0.0, 1.0]]
     assert requests[0]["model"] == "Qwen/Qwen3-Embedding-8B"
     assert cosine([1, 0], [1, 0]) == pytest.approx(1.0) and cosine([1, 0], [0, 1]) == pytest.approx(0.0)
+
+
+def scoring_reply(token, logprob, alternatives=()):
+    top = [{"token": t, "logprob": lp} for t, lp in alternatives]
+    return {"choices": [{"message": {"content": token}, "finish_reason": "length",
+                         "logprobs": {"content": [{"token": token, "logprob": logprob, "top_logprobs": top}]}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+
+
+def test_non_letter_answer_uses_autotoms_fallbacks(tmp_path):
+    import math
+    log = tmp_path / "calls.jsonl"
+    client = LLMClient(ModelConfig(), transport=lambda r: scoring_reply("The", math.log(0.9)), log_path=log)
+    with pytest.raises(ProtocolError, match="A or B"):
+        client.score_label("prompt")
+    assert client.score_label("prompt", fallback=0.1) == 0.1
+    alternatives = LLMClient(ModelConfig(), transport=lambda r: scoring_reply(
+        "The", math.log(0.6), [("The", math.log(0.6)), (" A", math.log(0.3))]))
+    assert abs(alternatives.score_label("prompt", fallback=0.1) - 0.3) < 1e-9
+    assert client.usage()["score_fallbacks"] == 1 and alternatives.usage()["score_fallbacks"] == 1
+    assert '"score_fallback": "constant"' in log.read_text()
