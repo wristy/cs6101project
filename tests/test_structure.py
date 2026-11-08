@@ -16,7 +16,8 @@ SHARED_MODULES = [
     "experiments.exp3_persona.variant", "experiments.exp4_scoring.run", "experiments.exp4_scoring.ab",
     "experiments.exp4_scoring.noul", "shared.models.typesafe", "shared.tracing.structured",
     "shared.tracing.format_check", "experiments.exp2a_mental_models.run", "experiments.exp2a_mental_models.variant",
-    "experiments.exp2b_triples.run", "experiments.exp2b_triples.variant", "shared.runner", "shared.runner.evaluation",
+    "experiments.exp2b_triples.run", "experiments.exp2b_triples.variant", "experiments.exp5_rejuvenation.run",
+    "experiments.exp5_rejuvenation.variant", "experiments.exp6_summary.run", "experiments.exp6_summary.variant", "shared.runner", "shared.runner.evaluation",
     "shared.tracing", "shared.analysis", "experiments",
 ]
 

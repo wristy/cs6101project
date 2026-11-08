@@ -42,6 +42,14 @@ class EmbeddingClient:
             raise RuntimeError("Embedding count does not match input count")
         return vectors
 
+    def usage(self):
+        return _usage(self.records)
+
+
+def _usage(records):
+    return {"embed_calls": len(records),
+            "embed_tokens": sum((r.get("usage") or {}).get("total_tokens", 0) or 0 for r in records)}
+
 
 def cosine(a, b):
     dot = sum(x * y for x, y in zip(a, b))

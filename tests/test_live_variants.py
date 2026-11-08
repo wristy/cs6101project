@@ -13,7 +13,8 @@ from shared.runner import experiment
 
 pytestmark = pytest.mark.live
 ROOT = Path(__file__).resolve().parents[1] / "results/live-tests"
-EXPERIMENTS = ["exp2a_mental_models", "exp2b_triples", "exp3_persona", "exp4_scoring"]
+EXPERIMENTS = ["exp2a_mental_models", "exp2b_triples", "exp3_persona", "exp4_scoring",
+               "exp5_rejuvenation", "exp6_summary"]
 CASES = [(name, arm["name"], benchmark)
          for name in EXPERIMENTS
          for arm in importlib.import_module(f"experiments.{name}.run").ARMS
