@@ -1,10 +1,10 @@
-"""Load the released ParaphrasedToMi text and trace files."""
+"""Load ThoughtTracing's released ParaphrasedToMi text and trace files.
+
+Step 3 extends this to first- and second-order questions and freezes the 200-question set."""
 
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from pathlib import Path
-import random
 import re
 
 
@@ -24,27 +24,6 @@ class Example:
     def inference_input(self):
         return {key: value for key, value in asdict(self).items()
                 if key in {"id", "context", "question", "choices", "target", "answer_format"}}
-
-
-def load_autotom_examples(path):
-    examples = []
-    for index, line in enumerate(Path(path).read_text().splitlines()):
-        record = json.loads(line)
-        question_type = record["question_type"]
-        target_match = re.fullmatch(r"Where will (.+?) look for .+\?", record["question"])
-        if not question_type.startswith("first_order_") or target_match is None:
-            continue
-        choices = tuple(record["containers"])
-        if len(choices) < 2 or len(set(choices)) != len(choices):
-            raise ValueError("AutoToM requires distinct container choices")
-        examples.append(Example(
-            id=f"autotom:{index}", story_id=sha256(record["story"].encode()).hexdigest(),
-            context=record["story"], question=record["question"], choices=choices,
-            target=target_match[1], answer=record["answer"], question_type=question_type,
-            belief_type="true_belief" if question_type.endswith("_no_tom") else "false_belief",
-            answer_format="multiple_choice",
-        ))
-    return examples
 
 
 def load_examples(path):
@@ -84,28 +63,3 @@ def load_examples(path):
             answer=answer, question_type=question_type, belief_type=belief_type,
         ))
     return examples
-
-
-def select_pilot(examples, per_type=10, seed=42):
-    if per_type < 1:
-        raise ValueError("per_type must be positive")
-    shuffled = sorted(examples, key=lambda example: example.id)
-    random.Random(seed).shuffle(shuffled)
-    used_stories = set()
-    debug, pilot = [], []
-    for destination, count in ((debug, 1), (pilot, per_type)):
-        for belief_type in ("true_belief", "false_belief"):
-            candidates = [example for example in shuffled
-                          if example.belief_type == belief_type
-                          and example.story_id not in used_stories]
-            selected = []
-            for example in candidates:
-                if example.story_id not in used_stories:
-                    selected.append(example)
-                    used_stories.add(example.story_id)
-                if len(selected) == count:
-                    break
-            if len(selected) != count:
-                raise ValueError(f"Not enough distinct stories for {belief_type}")
-            destination.extend(selected)
-    return debug, pilot

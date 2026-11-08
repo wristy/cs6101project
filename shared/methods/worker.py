@@ -10,8 +10,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from tom_research.bridge import configure
-from tom_research.client import LLMClient, ModelConfig, ProtocolError
+from shared.bridge import configure
+from shared.models.client import LLMClient, ModelConfig, ProtocolError
 
 
 ROOT = Path(__file__).resolve().parents[2]

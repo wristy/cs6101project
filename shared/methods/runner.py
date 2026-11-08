@@ -1,4 +1,4 @@
-"""Offline plumbing checks and isolated live-method execution."""
+"""Run one method on one question in an isolated worker process."""
 
 from dataclasses import asdict
 import json
@@ -6,12 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from tom_research.client import ModelConfig
-
-
-def offline_runner(method, payload, directory):
-    return {"status": "synthetic", "answer": None, "usage": {"calls": 0},
-            "note": "Offline plumbing check only; no model or algorithm executed."}
+from shared.models.client import ModelConfig
 
 
 class LiveRunner:
@@ -30,7 +25,7 @@ class LiveRunner:
         with (directory / "worker.log").open("w") as log:
             try:
                 process = subprocess.run(
-                    [sys.executable, "-m", "tom_research.worker", "--request", str(request_path),
+                    [sys.executable, "-m", "shared.methods.worker", "--request", str(request_path),
                      "--result", str(result_path)], stdout=log, stderr=subprocess.STDOUT,
                     timeout=self.item_seconds,
                 )

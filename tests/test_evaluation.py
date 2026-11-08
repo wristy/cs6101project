@@ -3,8 +3,8 @@ import json
 
 import pytest
 
-from tom_research.data import Example
-from tom_research.evaluation import run_pilot, score_answer, summarize
+from shared.benchmarks.paraphrased_tomi import Example
+from shared.runner.evaluation import run_pilot, score_answer, summarize
 
 
 def example():

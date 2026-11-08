@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tom-research"
 version = "0.1.0"
-description = "Small notebook-based ThoughtTracing and AutoToM experiments"
+description = "Experiments extending ThoughtTracing with ideas from AutoToM"
 requires-python = ">=3.12"
 dependencies = [
   "numpy", "pandas", "openai", "requests", "tqdm", "tenacity",
@@ -13,11 +13,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "jupyterlab", "ipykernel", "nbclient", "nbformat"]
+dev = ["pytest"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]
+markers = ["live: makes a few real API calls; run with --live (needs keys in .env)"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tom_research"]
+packages = ["shared", "experiments"]

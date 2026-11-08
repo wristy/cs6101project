@@ -24,6 +24,4 @@ prepare_source() {
 prepare_source thought-tracing https://github.com/skywalker023/thought-tracing.git 966eb2712714aa29b4d5d2395e39af94a2be90d7
 prepare_source AutoToM https://github.com/SCAI-JHU/AutoToM.git 3f569b7ab1d0ee2702ab43ebdc724679d5fc5231
 uv sync --extra dev --frozen
-.venv/bin/python -m ipykernel install --user --name tom-research --display-name 'ToM Research (.venv)'
-.venv/bin/python -m tom_research.study prepare
 .venv/bin/python -m pytest tests -q

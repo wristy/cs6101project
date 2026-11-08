@@ -3,8 +3,11 @@
 __pycache__/
 .pytest_cache/
 *.egg-info/
-.ipynb_checkpoints/
 external/
-results/
 .env
 *.log
+# Results: per-question records and aggregates are committed; raw call logs and scratch are not.
+results/**/calls.jsonl
+results/**/model/
+results/**/request.json
+results/live-tests/

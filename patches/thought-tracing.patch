@@ -1,5 +1,5 @@
 diff --git a/agents/load_model.py b/agents/load_model.py
-index a041460..041ffe0 100644
+index a041460..3a1eed4 100644
 --- a/agents/load_model.py
 +++ b/agents/load_model.py
 @@ -1,9 +1,14 @@
@@ -12,7 +12,7 @@ index a041460..041ffe0 100644
  
  def load_model(model_name, num_gpus=2, mode="async", **kwargs):
 +    if os.environ.get("TOM_RESEARCH_BACKEND") == "1":
-+        from tom_research.bridge import SharedAgent, get_client
++        from shared.bridge import SharedAgent, get_client
 +        return SharedAgent(SimpleNamespace(**{**kwargs, "model": get_client().config.model}))
 +    from .gpt import AsyncConversationalGPTBaseAgent, ConversationalGPTBaseAgent, O1BaseAgent, O1MiniAgent
 +    from .gemini import AsyncGeminiAgent

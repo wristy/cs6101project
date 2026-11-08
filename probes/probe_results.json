@@ -1,0 +1,78 @@
+{
+  "mimo": {
+    "token_ids": {
+      "A": 32,
+      "B": 33
+    },
+    "ab_plain": {
+      "text": "A",
+      "token": "A",
+      "logprob": -0.0009426202741451561,
+      "p_chosen": 0.9990578238527869,
+      "n_alternatives": 0,
+      "top": {}
+    },
+    "forced_plain": {
+      "text": "Paris",
+      "token": "Paris",
+      "logprob": -0.004158421885222197,
+      "p_chosen": 0.9958502123786154,
+      "n_alternatives": 0,
+      "top": {}
+    },
+    "ab_bias": {
+      "text": "A",
+      "token": "A",
+      "logprob": -0.0009426202741451561,
+      "p_chosen": 0.9990578238527869,
+      "n_alternatives": 0,
+      "top": {}
+    },
+    "forced_bias": {
+      "text": "Paris",
+      "token": "Paris",
+      "logprob": -0.004158421885222197,
+      "p_chosen": 0.9958502123786154,
+      "n_alternatives": 0,
+      "top": {}
+    },
+    "tier": "middle",
+    "why": "only the chosen token is visible; logit_bias did not force A/B (wrong token IDs, or bias ignored)",
+    "notes": "logit_bias accepted but silently ignored; top_logprobs always empty. Chosen-token logprob is graded on uncertain prompts (P=0.65 on 'pick A or B at random', 0.49 on 'is a hot dog a sandwich', 0.95 on coin flip), so P(A) or 1-P(B) is usable. HF repo for tokenizer is MiMo-V2.6-Pro-RL; A=32, B=33."
+  },
+  "gpt6sol": {
+    "token_ids": {
+      "A": 32,
+      "B": 33
+    },
+    "ab_plain": {
+      "text": "A",
+      "token": "A",
+      "logprob": 0.0,
+      "p_chosen": 1.0,
+      "n_alternatives": 1,
+      "top": {
+        "A": 0.0
+      }
+    },
+    "forced_plain": {
+      "text": "Paris",
+      "token": "Paris",
+      "logprob": 0.0,
+      "p_chosen": 1.0,
+      "n_alternatives": 1,
+      "top": {
+        "Paris": 0.0
+      }
+    },
+    "ab_bias": {
+      "error": "BadRequestError: Error code: 400 - Unsupported parameter: 'logit_bias' is not supported with this model."
+    },
+    "forced_bias": {
+      "error": "BadRequestError: Error code: 400 - Unsupported parameter: 'logit_bias' is not supported with this model."
+    },
+    "tier": "middle",
+    "why": "only the chosen token is visible; logit_bias did not force A/B (wrong token IDs, or bias ignored)",
+    "notes": "logit_bias rejected (400). top_logprobs capped at 5 but only the chosen token comes back. Needs max_completion_tokens>=~16. Chosen-token logprob is saturated and quantized: 0.0 on the probe prompts and >=0.998 even on coin flip / random pick, so P(A) carries almost no graded signal."
+  }
+}

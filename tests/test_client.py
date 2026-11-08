@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from tom_research.client import LLMClient, ModelConfig, ProtocolError
+from shared.models.client import LLMClient, ModelConfig, ProtocolError
 
 
 def response(text="basket", top=None, finish="stop"):

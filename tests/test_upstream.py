@@ -21,8 +21,8 @@ def test_real_thoughttracing_one_step_with_scripted_responses(tmp_path):
 import json
 from pathlib import Path
 import sys
-from tom_research.client import LLMClient, ModelConfig
-from tom_research.worker import run_method
+from shared.models.client import LLMClient, ModelConfig
+from shared.methods.worker import run_method
 
 outputs = iter([
     "Ava is in the kitchen. The apple is in the basket.<no action>",
@@ -51,9 +51,9 @@ assert "Where will Ava look" not in str([record["request"] for record in client.
 def test_real_autotom_likelihood_and_generation_use_shared_backend(tmp_path):
     run_script('''
 import math
-from tom_research.bridge import configure
-from tom_research.client import LLMClient, ModelConfig
-from tom_research.worker import load_upstream
+from shared.bridge import configure
+from shared.models.client import LLMClient, ModelConfig
+from shared.methods.worker import load_upstream
 
 def transport(request):
     return {"choices": [{"message": {"content": "A"}, "finish_reason": "stop",

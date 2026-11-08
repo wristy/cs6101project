@@ -1,96 +1,36 @@
-# ToM Research Pilot
+# ThoughtTracing × AutoToM experiments
 
-Two separate tracks test new models with the released methods:
+How much of AutoToM's lead over ThoughtTracing can small, targeted changes to ThoughtTracing recover?
+Each experiment changes one ThoughtTracing step. ThoughtTracing stays question-agnostic throughout.
 
-| Track | Dataset | Answers | Runs |
-| --- | --- | --- | --- |
-| `thoughttracing` | ThoughtTracing's ParaphrasedToMi | Free text | Plain model, ThoughtTracing |
-| `autotom` | AutoToM's released ToMi | Supplied container choices | Plain model, AutoToM |
+## Layout
 
-Each track has 2 debugging questions and 20 fixed pilot questions: 10 true-belief
-and 10 false-belief questions, all first-order. Debug and pilot story texts are
-disjoint. Choices for AutoToM come from `containers` metadata, not sentence endings.
+| Path | What it holds |
+| --- | --- |
+| `shared/models/` | One logged client for every model (MiMo on DeepInfra, GPT-6 Sol on OpenAI, Jev, Noul, embeddings) and the A/B probability rule |
+| `shared/benchmarks/` | Benchmark loaders; frozen question-ID lists in `shared/benchmarks/data/` |
+| `shared/methods/` | Baselines (plain, ThoughtTracing, AutoToM) and the worker that runs one method on one question in its own process |
+| `shared/tracing/` | Hooks for swapping one ThoughtTracing step |
+| `shared/runner/` | Resumable runs, scoring, per-question records |
+| `shared/analysis/` | Paired statistics, main table, extension figure |
+| `experiments/expN_*/` | One folder per experiment: `run.py`, plus `variant.py` for Experiments 2–6 (see `experiments/README.md`) |
+| `results/` | Per-question records per experiment and arm; `results/aggregate/` for tables and figures |
+| `external/` + `patches/` | The official ThoughtTracing and AutoToM code at pinned commits, with small patches that route their LLM calls to our client (see `patches/README.md`) |
+| `probes/` | One-off API probes (logprob behaviour of MiMo and GPT-6 Sol) and their results |
+| `docs/reference/` | Papers, proposal and notes |
 
 ## Setup
 
-Python 3.12+, Git, and `uv` are required. Restore the pinned official sources,
-apply the compatibility patches, install the locked environment, register
-the notebook kernel, and run the offline tests:
+Python 3.12+, Git and `uv`:
 
 ```sh
-bash scripts/bootstrap.sh
+bash scripts/bootstrap.sh      # fetch pinned upstream code, apply patches, install, run offline tests
+cp .env.example .env           # then fill in the API keys
 ```
 
-The bootstrap downloads code and Python dependencies, not model weights. It does
-not launch a GPU server or reset existing checkouts. Source changes are recorded
-in [patches/README.md](patches/README.md).
-
-## Notebooks
-
-Use the existing `.venv` and the `tom-research` notebook kernel.
-Run `notebooks/00_data.ipynb`, then `01_debug.ipynb`, then `02_pilot.ipynb`.
-Set `TRACK` to `thoughttracing` or `autotom` in each notebook's setup cell.
-Alternatively, set `TOM_TRACK` before starting Jupyter. Keep `LIVE = False`.
-
-Offline mode uses synthetic records with no accuracy; it does not execute a model.
-Each track writes 40 pilot records under `results/offline/<track>/pilot/`.
-Track-specific sample manifests are in `data/<track>_pilot_ids.json`.
-The old `data/pilot_ids.json` and any mixed-track results are left untouched and
-are not used by the new notebooks.
-
-Prepare both samples and run tests:
+## Tests
 
 ```sh
-.venv/bin/python -m tom_research.study prepare
-.venv/bin/python -m pytest tests -q
+.venv/bin/python -m pytest -q          # offline tests, no API calls
+.venv/bin/python -m pytest -q --live   # also a few real API calls; each skips if its key is missing
 ```
-
-Development uses red/green TDD: add a failing behavioral test, run it, implement
-the smallest change, then rerun the same test. Notebook tests execute both tracks
-in fresh kernels. Existing pinned source checkouts in `external/` are required
-for dataset and upstream integration tests.
-
-## Interpretation
-
-Compare each new-model result with its own plain baseline. Do not rank methods
-across these datasets, or compare a 20-question pilot directly with full published
-scores. First reproduce the paper's complete evaluation subset, prompts, scoring,
-and decoding configuration. Rerun an original backend where accessible before
-attributing a difference solely to the newer model.
-
-Known adaptations remain explicit:
-
-- ThoughtTracing uses Qwen throughout; its paper used GPT-4o for action labeling
-  on ParaphrasedToMi. Its free-text scorer accepts a case-insensitive gold substring.
-- AutoToM keeps supplied choices and automated Bayesian inference. Its plain
-  baseline is prompted to output exactly one container; invalid text is counted
-  separately. This formatting protocol is not yet verified as the paper's baseline.
-- Qwen thinking is disabled. This is not a test of its default thinking mode.
-- The pilots omit higher-order, memory, and reality questions. They cannot
-  reproduce either paper's aggregate benchmark score.
-
-Inspect live errors and raw answers, not only accuracy. Saved manifests include
-model settings, source hashes and commits; changed settings require a new result
-directory. Baselines from different tracks are never pooled in summaries.
-
-## Live Runs
-
-No weight downloads or GPU jobs are part of offline setup. Live runs require an
-allocated GPU, a verified endpoint, pinned model revision, and recorded hardware
-and server versions in `configs/pilot.json`. Complete the selected track's live
-debug notebook first. The pilot refuses mismatched debug settings or datasets.
-
-Before enabling live mode, verify non-thinking generation and the exact raw `A`
-token probability against the deployed server/tokenizer. Missing label scores
-stop the run; they are not replaced with a guessed value. Keep a modest context
-limit and concurrency 1 initially. Record any context or output budget changes
-before freezing the run. Failed items remain visible; use a new result directory
-after fixing errors instead of silently replacing earlier records.
-
-Offline verification covers a scripted one-step execution of the real
-ThoughtTracing tracer, AutoToM's real likelihood path, method adapter contracts,
-and both notebook tracks. It does not validate a complete AutoToM solve against
-Qwen or establish research accuracy. No such live result is claimed.
-
-Official sources: [ThoughtTracing](https://github.com/skywalker023/thought-tracing)
-and [AutoToM](https://github.com/SCAI-JHU/AutoToM).

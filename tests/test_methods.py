@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from tom_research.bridge import SharedAgent, configure
-from tom_research.client import LLMClient, ModelConfig
-from tom_research.worker import run_method
+from shared.bridge import SharedAgent, configure
+from shared.models.client import LLMClient, ModelConfig
+from shared.methods.worker import run_method
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,7 +33,7 @@ def test_official_algorithm_imports_without_gpu_dependencies(method):
     if not (ROOT / "external/thought-tracing/tracer.py").exists():
         pytest.skip("Run scripts/bootstrap.sh to fetch pinned sources")
     result = subprocess.run(
-        [sys.executable, "-m", "tom_research.worker", "--check-import", method],
+        [sys.executable, "-m", "shared.methods.worker", "--check-import", method],
         cwd=ROOT, capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr

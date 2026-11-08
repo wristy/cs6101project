@@ -11,7 +11,7 @@ index 3c62a11..85c4024 100644
  from ElementExtractor import *
  from utils import *
 diff --git a/model/probs.py b/model/probs.py
-index 4282e36..1c53b63 100644
+index 4282e36..d7a9af8 100644
 --- a/model/probs.py
 +++ b/model/probs.py
 @@ -176,6 +176,12 @@ B) Unlikely."""
@@ -19,7 +19,7 @@ index 4282e36..1c53b63 100644
  A) Likely.
  B) Unlikely."""
 +    if os.environ.get("TOM_RESEARCH_BACKEND") == "1":
-+        from tom_research.bridge import get_client
++        from shared.bridge import get_client
 +        probability = get_client().score_label(prompt)
 +        if action_exponent is not None and "Action" in variable:
 +            probability = math.pow(probability, action_exponent)
@@ -28,7 +28,7 @@ index 4282e36..1c53b63 100644
          global cost_of_estimating_likelihood
          global times_of_estimating
 diff --git a/model/utils.py b/model/utils.py
-index 063d5fb..7eb97f0 100644
+index 063d5fb..1e36c7c 100644
 --- a/model/utils.py
 +++ b/model/utils.py
 @@ -5,12 +5,8 @@ import string
@@ -83,7 +83,7 @@ index 063d5fb..7eb97f0 100644
      global times_of_proposing_hypotheses
      global global_seed
 +    if os.environ.get("TOM_RESEARCH_BACKEND") == "1":
-+        from tom_research.bridge import get_client
++        from shared.bridge import get_client
 +        client = get_client()
 +        if logprobs:
 +            result = client.score_label(prompt)
