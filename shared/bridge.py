@@ -4,12 +4,28 @@ import os
 
 
 _client = None
+_extras = {}
 
 
 def configure(client):
     global _client
     _client = client
+    _extras.clear()
     os.environ["TOM_RESEARCH_BACKEND"] = "1"
+
+
+def extra_client(name, factory):
+    """A second client a variant needs (e.g. Jev), created once per question and reported in usage."""
+    if name not in _extras:
+        _extras[name] = factory()
+    return _extras[name]
+
+
+def extra_usage():
+    usage = {}
+    for client in _extras.values():
+        usage.update(client.usage())
+    return usage
 
 
 def get_client():

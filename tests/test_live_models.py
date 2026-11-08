@@ -1,4 +1,4 @@
-"""Step 2 live checks: 7 small real API calls in total. Run with `pytest --live`.
+"""Step 2 live checks: 7 small real API calls in total, plus 2 Jev calls. Run with `pytest --live`.
 
 Each test skips if its key is missing from .env. Call logs go to results/live-tests/ (git-ignored).
 """
@@ -10,6 +10,7 @@ import pytest
 from shared.models.client import LLMClient
 from shared.models.embeddings import EmbeddingClient, cosine
 from shared.models.providers import model_config
+from shared.models.typesafe import JevClient
 
 pytestmark = pytest.mark.live
 LOGS = Path(__file__).resolve().parents[1] / "results/live-tests"
@@ -47,3 +48,12 @@ def test_embeddings_rank_a_paraphrase_above_an_unrelated_sentence(require_key):
         "The stock market closed higher on Friday.",
     ])
     assert cosine(a, paraphrase) > cosine(a, unrelated)
+
+
+def test_jev_noul_separates_true_from_false(require_key):
+    require_key("TYPESAFE_API_KEY")
+    client = JevClient(max_calls=2, log_path=LOGS / "jev.jsonl")
+    state = "Sally put the apple in the basket and left. Nobody touched the basket."
+    likely = client.noul(state, "Sally believes the apple is in the basket.")
+    unlikely = client.noul(state, "Sally believes the apple is on the moon.")
+    assert likely > 0.5 > unlikely, (likely, unlikely)

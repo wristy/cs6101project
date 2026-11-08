@@ -8,9 +8,10 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 
+from dotenv import load_dotenv
 import numpy as np
 
-from shared.bridge import configure
+from shared.bridge import configure, extra_usage
 from shared.methods import prompts
 from shared.models.client import LLMClient, ModelConfig, ProtocolError
 
@@ -96,7 +97,7 @@ def run_method(method, payload, client, workdir, upstream=None, variant=None):
                 raise ProtocolError("ThoughtTracing returned an empty trace")
             prompt = prompts.traced_prompt(dataset, tt_input, trace)
         answer = client.generate(prompt, max_tokens=prompts.MAX_TOKENS[dataset])
-        return {"status": "ok", "answer": answer, "trace": trace, "usage": client.usage()}
+        return {"status": "ok", "answer": answer, "trace": trace, "usage": {**client.usage(), **extra_usage()}}
     if method != "autotom":
         raise ValueError(f"Unknown method {method}")
     upstream = upstream or load_upstream(method)
@@ -143,6 +144,7 @@ def main():
         return
     if args.request is None or args.result is None:
         parser.error("Provide --request and --result, or --check-import")
+    load_dotenv(ROOT / ".env")
     request = json.loads(args.request.read_text())
     workdir = args.result.resolve().parent
     runtime = workdir / "model"
@@ -158,7 +160,8 @@ def main():
         result = run_method(request["method"], request["payload"], client, workdir,
                             variant=request.get("variant"))
     except Exception as error:
-        result = {"status": "error", "error": f"{type(error).__name__}: {error}", "usage": client.usage()}
+        result = {"status": "error", "error": f"{type(error).__name__}: {error}",
+                  "usage": {**client.usage(), **extra_usage()}}
     args.result.write_text(json.dumps(result, default=lambda value: value.tolist() if hasattr(value, "tolist") else str(value)))
 
 

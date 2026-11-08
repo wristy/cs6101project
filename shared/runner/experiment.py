@@ -10,6 +10,8 @@ import importlib
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from shared.methods.runner import LiveRunner
 from shared.models.providers import CHAT_MODELS, model_config
 from shared.runner.evaluation import run_arm, summarize
@@ -45,6 +47,7 @@ def run(experiment, arm, model, benchmark, limit=None, runner=None, root=ROOT / 
 
 def main(experiment, arms, plan):
     """Command line shared by the run.py files. plan maps model -> benchmarks it runs on."""
+    load_dotenv(ROOT / ".env")
     parser = argparse.ArgumentParser(description=f"Run {experiment}")
     parser.add_argument("--model", choices=sorted(CHAT_MODELS), default="mimo")
     parser.add_argument("--benchmark", choices=BENCHMARKS, action="append")

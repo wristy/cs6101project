@@ -13,7 +13,8 @@ SHARED_MODULES = [
     "shared.benchmarks.paraphrased_tomi", "shared.benchmarks.bigtom", "shared.benchmarks.mmtom",
     "shared.benchmarks.exploretom", "shared.methods.prompts", "shared.runner.scoring",
     "shared.runner.experiment", "experiments.exp1_baseline.run", "experiments.exp3_persona.run",
-    "experiments.exp3_persona.variant", "shared.runner", "shared.runner.evaluation",
+    "experiments.exp3_persona.variant", "experiments.exp4_scoring.run", "experiments.exp4_scoring.ab",
+    "experiments.exp4_scoring.noul", "shared.models.typesafe", "shared.runner", "shared.runner.evaluation",
     "shared.tracing", "shared.analysis", "experiments",
 ]
 
