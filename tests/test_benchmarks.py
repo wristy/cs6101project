@@ -5,12 +5,14 @@ import json
 
 import pytest
 
-from shared.benchmarks import bigtom, common, mmtom, paraphrased_tomi
+from shared.benchmarks import bigtom, common, exploretom, mmtom, paraphrased_tomi
 from shared.benchmarks.mmtom_rename import rename, rename_question_choice
 
 pytestmark = pytest.mark.skipif(not bigtom.SOURCE.exists(),
                                 reason="Run scripts/bootstrap.sh to fetch pinned sources")
 LOADERS = {"bigtom": bigtom, "mmtom": mmtom, "paraphrased_tomi": paraphrased_tomi}
+if exploretom.SOURCE.exists():  # downloaded by hand, see shared/benchmarks/data/exploretom/README.md
+    LOADERS["exploretom"] = exploretom
 
 
 def test_bigtom_is_all_249_with_autotom_condition_names():
@@ -85,3 +87,18 @@ def test_mmtom_autotom_inputs_use_only_renamed_names():
     for example in mmtom.load():
         text = " ".join(example.native["autotom"]["states"] + example.native["autotom"]["actions"])
         assert not re.search(original, text), (example.id, re.search(original, text))
+
+
+@pytest.mark.skipif(not exploretom.SOURCE.exists(), reason="ExploreToM file not downloaded")
+def test_exploretom_is_balanced_location_beliefs_with_answers_in_the_story():
+    examples = exploretom.load()
+    assert len(examples) == 200
+    assert Counter(e.category for e in examples) == {cell: 50 for cell in exploretom.CELLS}
+    for example in examples:
+        assert example.answer.lower() in example.context.lower()
+        assert example.target in example.question
+
+
+def test_frozen_exploretom_list_is_committed_even_without_the_data():
+    record = json.loads((common.FROZEN / "exploretom.json").read_text())
+    assert record["count"] == 200 and record["source_sha256"] == exploretom.SOURCE_SHA256
