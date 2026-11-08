@@ -122,3 +122,22 @@ def test_non_letter_answer_uses_autotoms_fallbacks(tmp_path):
     assert abs(alternatives.score_label("prompt", fallback=0.1) - 0.3) < 1e-9
     assert client.usage()["score_fallbacks"] == 1 and alternatives.usage()["score_fallbacks"] == 1
     assert '"score_fallback": "constant"' in log.read_text()
+
+
+def test_truncated_text_is_an_error_unless_upstream_asked_for_it():
+    def transport(request):
+        return {"choices": [{"message": {"content": "Step 1: Ava looks"}, "finish_reason": "length"}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 512}}
+    client = LLMClient(ModelConfig(), transport=transport)
+    with pytest.raises(ProtocolError):
+        client.generate("Think step by step", max_tokens=512)
+    assert client.generate("Think step by step", max_tokens=512, allow_truncated=True) == "Step 1: Ava looks"
+    assert client.usage()["truncated"] == 1
+
+
+def test_thoughttracing_agent_accepts_truncated_text():
+    from shared.bridge import SharedAgent, configure
+    client = LLMClient(ModelConfig(), transport=lambda request: {
+        "choices": [{"message": {"content": "Reasoning that ran"}, "finish_reason": "length"}], "usage": {}})
+    configure(client)
+    assert SharedAgent(None).batch_interact(["p"], max_tokens=512) == ["Reasoning that ran"]

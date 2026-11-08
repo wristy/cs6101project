@@ -36,9 +36,16 @@ def load_upstream(method):
         # tests). Make any such call fail loudly instead of reaching a real API.
         def unpatched(*args, **kwargs):
             raise RuntimeError("An unpatched AutoToM function tried to call OpenAI directly")
-        for name in ("utils", "probs"):
-            if name in sys.modules:
-                sys.modules[name].OpenAI = unpatched
+
+        class Blocked:
+            def __getattr__(self, name):
+                unpatched()
+        for module in list(sys.modules.values()):
+            if str(getattr(module, "__file__", "") or "").startswith(str(source)):
+                if hasattr(module, "OpenAI"):
+                    module.OpenAI = unpatched
+                if hasattr(module, "openai"):
+                    module.openai = Blocked()
     return loaded
 
 
@@ -121,7 +128,11 @@ def run_method(method, payload, client, workdir, upstream=None, variant=None):
     )
     probabilities, model_record = solver.solve()
     if probabilities is None:
-        raise ProtocolError("AutoToM could not answer with its chosen model")
+        # AutoToM's own safety check (utils.check_nested): it judged a question higher-order on a
+        # first-order dataset and declines. Upstream scores this as incorrect, so we record it as
+        # an invalid answer (scored wrong), not as a failed run.
+        return {"status": "invalid", "error": "AutoToM declined: judged a first-order question higher-order",
+                "nested": getattr(solver, "nested", None), "usage": {**client.usage(), **extra_usage()}}
     probabilities = np.asarray(probabilities, dtype=float)
     if (probabilities.shape != (len(candidates),) or not np.isfinite(probabilities).all()
             or (probabilities < 0).any() or not np.isclose(probabilities.sum(), 1)):
@@ -156,6 +167,9 @@ def main():
     import random
     random.seed(request["model_config"]["seed"])
     client = LLMClient(ModelConfig(**request["model_config"]), log_path=workdir / "calls.jsonl")
+    # Our client already holds its key. Upstream code that builds its own OpenAI client from the
+    # environment (and would silently call GPT-4o) now fails with an authentication error instead.
+    os.environ.pop("OPENAI_API_KEY", None)
     try:
         result = run_method(request["method"], request["payload"], client, workdir,
                             variant=request.get("variant"))

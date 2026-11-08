@@ -81,3 +81,52 @@ assert utils.llm_request("Describe the scene", model=client.config.model) == ("A
 assert all(record["request"]["model"] == client.config.model for record in client.records)
 assert client.usage()["calls"] == 3
 ''', tmp_path)
+
+def test_autotom_question_classifiers_use_shared_backend_not_gpt4o(tmp_path):
+    """model_adjustment.gpt_call (nested/realistic/memory checks, model proposal) must use our model."""
+    run_script('''
+import os
+os.environ["OPENAI_API_KEY"] = "sk-must-not-be-used"
+from shared.bridge import configure
+from shared.models.client import LLMClient, ModelConfig
+from shared.methods.worker import load_upstream
+
+def transport(request):
+    return {"choices": [{"message": {"content": "No"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 1}}
+client = LLMClient(ModelConfig(), transport=transport)
+configure(client)
+load_upstream("autotom")
+import model_adjustment
+assert model_adjustment.determine_higher_order_belief("Where will Ava look for the apple?") is False
+assert client.usage()["calls"] == 1 and client.records[0]["request"]["model"] == client.config.model
+os.environ["TOM_RESEARCH_BACKEND"] = "0"
+try:
+    model_adjustment.gpt_call("hi")
+except RuntimeError as error:
+    assert "unpatched AutoToM" in str(error)
+else:
+    raise AssertionError("direct OpenAI call was not blocked")
+''', tmp_path)
+
+
+def test_worker_drops_openai_key_after_building_its_client(tmp_path, monkeypatch):
+    import json
+    request = {"method": "plain", "payload": {"native": {"thoughttracing": {"dataset": "tomi", "input": "x"}}},
+               "model_config": {"seed": 0}}
+    (tmp_path / "request.json").write_text(json.dumps(request))
+    code = f'''
+import os, sys
+os.environ["OPENAI_API_KEY"] = "sk-test"
+os.environ["DEEPINFRA_API_KEY"] = "di-test"
+import shared.methods.worker as worker
+seen = {{}}
+def fake_run(*args, **kwargs):
+    seen["key"] = os.environ.get("OPENAI_API_KEY")
+    return {{"status": "ok"}}
+worker.run_method = fake_run
+sys.argv = ["worker", "--request", "{tmp_path / 'request.json'}", "--result", "{tmp_path / 'result.json'}"]
+worker.main()
+assert seen["key"] is None, seen
+'''
+    run_script(code, tmp_path)

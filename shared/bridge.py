@@ -39,8 +39,9 @@ class SharedAgent:
         self.args = args
 
     def interact(self, prompt, temperature=0, max_tokens=None, system_prompt=None, history=None):
+        # Upstream's own OpenAI agent returns whatever text came back, cut off or not.
         return get_client().generate(prompt, temperature=temperature or 0, max_tokens=max_tokens,
-                                     system_prompt=system_prompt, history=history)
+                                     system_prompt=system_prompt, history=history, allow_truncated=True)
 
     def batch_interact(self, prompts, temperature=0, max_tokens=None, system_prompts=None, histories=None):
         if system_prompts is None or isinstance(system_prompts, str):

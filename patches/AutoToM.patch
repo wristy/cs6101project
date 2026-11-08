@@ -23,6 +23,28 @@ index 29d27ce..459d1ce 100644
                  start_timestep = 0
                  print(f"Starting from timestep {start_timestep}")
  
+diff --git a/model/model_adjustment.py b/model/model_adjustment.py
+index ef59227..188da9b 100644
+--- a/model/model_adjustment.py
++++ b/model/model_adjustment.py
+@@ -2,6 +2,7 @@ import pandas as pd
+ from scipy.stats import entropy
+ import openai
+ import copy
++import os
+ 
+ benefit_threshold = 0.02
+ # terminate_threshold = 0.6
+@@ -252,6 +253,9 @@ def Bayesian_inference(start_timestep, all_timesteps, verbose, time_variables, p
+ 
+ 
+ def gpt_call(prompt):
++    if os.environ.get("TOM_RESEARCH_BACKEND") == "1":
++        from shared.bridge import get_client
++        return get_client().generate(prompt, system_prompt="You are a helpful assistant.")
+     response = openai.chat.completions.create(
+         model="gpt-4o",
+         messages=[
 diff --git a/model/probs.py b/model/probs.py
 index 4282e36..e501fd1 100644
 --- a/model/probs.py

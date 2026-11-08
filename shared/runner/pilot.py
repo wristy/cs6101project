@@ -55,6 +55,7 @@ def project(records, model, full_size, workers):
             "calls_per_q": round(mean("calls"), 1), "prompt_tokens_per_q": round(mean("prompt_tokens")),
             "completion_tokens_per_q": round(mean("completion_tokens")),
             "score_fallbacks": sum(u.get("score_fallbacks", 0) or 0 for u in usage),
+            "truncated": sum(u.get("truncated", 0) or 0 for u in usage),
             "seconds_per_q": round(seconds, 1), "cost_per_q": round(chat + embed, 5),
             "full_questions": full_size, "full_cost_usd": round((chat + embed) * full_size, 2),
             "full_jev_input_tokens": round(mean("jev_input_tokens") * full_size),
@@ -68,7 +69,7 @@ def run_one(spec, limit, workers, root):
     records = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     row = {"experiment": name, "model": model, "benchmark": benchmark, "arm": arm["name"]}
     row.update(project(records, model, len(experiment.load_benchmark(benchmark)), workers))
-    first_error = next((r.get("error") for r in records if r["status"] == "error"), None)
+    first_error = next((r.get("error") for r in records if r["status"] != "ok" and r.get("error")), None)
     row["first_error"] = (first_error or "")[:200]
     return row
 

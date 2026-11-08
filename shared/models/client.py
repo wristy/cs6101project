@@ -100,13 +100,19 @@ class LLMClient:
                         stream.write(json.dumps(record) + "\n")
 
     def generate(self, prompt, *, system_prompt=None, history=None, max_tokens=None, temperature=0,
-                 response_format=None):
+                 response_format=None, allow_truncated=False):
+        """allow_truncated: return text cut off at max_tokens, as upstream code does with its own
+        OpenAI client (ThoughtTracing caps likelihood reasoning at 512 tokens and parses whatever
+        came back). Each such reply is counted as `truncated` in usage()."""
         reply = self._request(prompt, system_prompt=system_prompt, history=history, max_tokens=max_tokens,
                               temperature=temperature, response_format=response_format)
         choice = reply["choices"][0]
         text = choice["message"].get("content")
         reasoning = choice["message"].get("reasoning_content") or choice["message"].get("reasoning")
-        if choice.get("finish_reason") != "stop" or not isinstance(text, str) or not text.strip():
+        finish = choice.get("finish_reason")
+        if finish == "length" and allow_truncated and isinstance(text, str) and text.strip():
+            self.records[-1]["truncated"] = True
+        elif finish != "stop" or not isinstance(text, str) or not text.strip():
             raise ProtocolError("Missing, truncated, or non-text response")
         if "<think>" in text or "</think>" in text or reasoning:
             raise ProtocolError("Unexpected thinking output in non-thinking mode")
@@ -154,7 +160,8 @@ class LLMClient:
     def usage(self):
         usage = {"calls": len(self.records), "prompt_tokens": 0, "completion_tokens": 0,
                  "seconds": sum(record["seconds"] for record in self.records), "usage_missing": 0,
-                 "score_fallbacks": sum("score_fallback" in record for record in self.records)}
+                 "score_fallbacks": sum("score_fallback" in record for record in self.records),
+                 "truncated": sum(bool(record.get("truncated")) for record in self.records)}
         for record in self.records:
             reported = record.get("response", {}).get("usage")
             if not reported:

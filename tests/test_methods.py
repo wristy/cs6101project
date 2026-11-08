@@ -150,3 +150,18 @@ def test_autotom_finds_its_prompts_for_any_model_name(tmp_path):
     assert link == tmp_path / "prompts/prompts_XiaomiMiMo/MiMo-V2.6-Pro"
     assert link.resolve() == (REPO / "external/AutoToM/model/prompts/prompts_gpt-4o").resolve()
     assert prepare_autotom_runtime(tmp_path, "XiaomiMiMo/MiMo-V2.6-Pro") == link
+
+
+def test_autotom_declining_a_question_is_scored_wrong_not_a_crash(tmp_path):
+    class Solver:
+        def __init__(self, **kwargs):
+            self.nested = None
+
+        def solve(self):
+            self.nested = True   # AutoToM's check_nested refused: higher-order on a first-order set
+            return None, {}
+
+    client = LLMClient(ModelConfig(), transport=lambda request: reply("unused"))
+    upstream = SimpleNamespace(ProblemSolver=Solver, argmax=max, argmin=min)
+    result = run_method("autotom", tomi_payload(states=["s"], actions=["a"]), client, tmp_path, upstream=upstream)
+    assert result["status"] == "invalid" and result["nested"] is True and "answer" not in result
