@@ -7,6 +7,7 @@ returns a scored answer, not that it is right.
 """
 
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -27,6 +28,8 @@ def test_one_question_runs_end_to_end(model, benchmark, arm_name, require_key):
     if benchmark == "exploretom" and not exploretom.SOURCE.exists():
         pytest.skip("ExploreToM file not downloaded")
     arm = next(arm for arm in exp1.ARMS if arm["name"] == arm_name)
+    # A smoke test always makes fresh calls: an old error record would otherwise be resumed.
+    shutil.rmtree(experiment.result_dir(exp1.EXPERIMENT, model, benchmark, arm_name, 1, ROOT), ignore_errors=True)
     row = experiment.run(exp1.EXPERIMENT, arm, model, benchmark, limit=1, root=ROOT)[0]
     record = experiment.result_dir(exp1.EXPERIMENT, model, benchmark, arm_name, 1, ROOT) / "predictions.jsonl"
     assert row["errors"] == 0, record.read_text()
