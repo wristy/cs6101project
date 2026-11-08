@@ -8,8 +8,19 @@ version = "0.1.0"
 description = "Experiments extending ThoughtTracing with ideas from AutoToM"
 requires-python = ">=3.12"
 dependencies = [
-  "numpy", "pandas", "openai", "requests", "tqdm", "tenacity",
-  "python-dotenv", "rich", "colorful", "nltk", "scipy", "backoff",
+  "numpy",
+  "pandas",
+  "openai",
+  "requests",
+  "tqdm",
+  "tenacity",
+  "python-dotenv",
+  "rich",
+  "colorful",
+  "nltk",
+  "scipy",
+  "backoff",
+  "matplotlib>=3.11.2",
 ]
 
 [project.optional-dependencies]
