@@ -14,7 +14,9 @@ SHARED_MODULES = [
     "shared.benchmarks.exploretom", "shared.methods.prompts", "shared.runner.scoring",
     "shared.runner.experiment", "experiments.exp1_baseline.run", "experiments.exp3_persona.run",
     "experiments.exp3_persona.variant", "experiments.exp4_scoring.run", "experiments.exp4_scoring.ab",
-    "experiments.exp4_scoring.noul", "shared.models.typesafe", "shared.runner", "shared.runner.evaluation",
+    "experiments.exp4_scoring.noul", "shared.models.typesafe", "shared.tracing.structured",
+    "shared.tracing.format_check", "experiments.exp2a_mental_models.run", "experiments.exp2a_mental_models.variant",
+    "experiments.exp2b_triples.run", "experiments.exp2b_triples.variant", "shared.runner", "shared.runner.evaluation",
     "shared.tracing", "shared.analysis", "experiments",
 ]
 

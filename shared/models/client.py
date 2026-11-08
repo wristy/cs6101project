@@ -59,7 +59,8 @@ class LLMClient:
             transport = lambda request: sdk.chat.completions.create(**request).model_dump()
         self.transport = transport
 
-    def _request(self, prompt, *, system_prompt=None, history=None, max_tokens=None, scoring=False, temperature=0):
+    def _request(self, prompt, *, system_prompt=None, history=None, max_tokens=None, scoring=False, temperature=0,
+                 response_format=None):
         if max_tokens is not None and max_tokens > self.config.max_tokens:
             raise ValueError("Requested output exceeds configured token budget")
         messages = []
@@ -74,6 +75,8 @@ class LLMClient:
                        **json.loads(json.dumps(self.config.extra)))
         if scoring:
             request.update(logprobs=True, top_logprobs=self.config.top_logprobs)
+        if response_format is not None:
+            request["response_format"] = response_format
         for attempt in range(self.config.max_retries + 1):
             if len(self.records) >= self.config.max_calls:
                 raise RuntimeError("Model call budget exhausted")
@@ -96,9 +99,10 @@ class LLMClient:
                     with self.log_path.open("a") as stream:
                         stream.write(json.dumps(record) + "\n")
 
-    def generate(self, prompt, *, system_prompt=None, history=None, max_tokens=None, temperature=0):
+    def generate(self, prompt, *, system_prompt=None, history=None, max_tokens=None, temperature=0,
+                 response_format=None):
         reply = self._request(prompt, system_prompt=system_prompt, history=history, max_tokens=max_tokens,
-                              temperature=temperature)
+                              temperature=temperature, response_format=response_format)
         choice = reply["choices"][0]
         text = choice["message"].get("content")
         reasoning = choice["message"].get("reasoning_content") or choice["message"].get("reasoning")
