@@ -45,8 +45,7 @@ def test_questions_are_well_formed_and_never_leak_the_answer(name):
         assert "answer" not in visible and "category" not in visible
         assert example.target and example.context and example.question
         assert len(example.choices) >= 2 and len(set(example.choices)) == len(example.choices)
-        if example.answer_format == "multiple_choice":
-            assert example.answer in example.choices
+        assert example.answer in example.choices
         assert set(example.native) == {"thoughttracing", "autotom"}
         keys = {key for method in example.native.values() for key in method}
         assert not keys & {"answer", "gt_answer", "true_answer", "label"}

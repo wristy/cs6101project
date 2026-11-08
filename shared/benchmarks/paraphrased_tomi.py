@@ -3,8 +3,12 @@
 ThoughtTracing shuffles the test split with pandas .sample(n=2000, random_state=123) and takes the
 first N questions of each type in that order (revised_tomi/test_tomi.py). We do the same with
 N = 25 for each of the eight first/second-order types, which gives 100 first-order and 100
-second-order questions, each split 50 false belief / 50 true belief. Options are the locations
-named in the story, as ThoughtTracing derives its candidates; answers are free text.
+second-order questions, each split 50 false belief / 50 true belief. Answers are free text.
+
+Options (used by AutoToM and the multiple-choice baseline) are the ToMi containers the story
+names, in order of first mention: two in 96% of the 4,004 questions, three in the rest. The
+correct answer is always among them. ThoughtTracing's own candidate list (the last word of each
+sentence) does not work on the paraphrased stories and missed the answer in 32 of our 200.
 """
 
 from hashlib import sha256
@@ -16,6 +20,10 @@ from shared.benchmarks.common import EXTERNAL, Example, select_frozen
 SOURCE = EXTERNAL / "thought-tracing/data/paraphrased_tomi/test.txt"
 TYPES = tuple(f"{order}_order_{variant}" for order in ("first", "second")
               for variant in ("0_tom", "1_tom", "0_no_tom", "1_no_tom"))
+# Every answer to a first- or second-order question in the test split is one of these.
+CONTAINERS = ("treasure chest", "container", "envelope", "cupboard", "suitcase", "bathtub", "pantry",
+              "bucket", "bottle", "drawer", "basket", "crate", "box")
+_CONTAINER = re.compile(r"\b(" + "|".join(re.escape(c) for c in CONTAINERS) + r")\b")
 QUESTION_PATTERNS = (re.compile(r"Where will (\w+) look for .+\?"),
                      re.compile(r"Where does (\w+) think that \w+ searches for .+\?"))
 
@@ -53,8 +61,9 @@ def load_all(source=SOURCE):
         match = next((m for pattern in QUESTION_PATTERNS if (m := pattern.fullmatch(question))), None)
         if match is None:
             raise ValueError(f"{source.stem}:{index}: unexpected question {question!r}")
-        choices = tuple(dict.fromkeys(sentence.strip(".").rsplit(" ", 1)[-1].replace("_", " ")
-                                      for sentence in sentences))
+        choices = tuple(dict.fromkeys(match[1] for match in _CONTAINER.finditer(context)))
+        if answer not in choices:
+            raise ValueError(f"{source.stem}:{index}: answer {answer!r} is not a container named in the story")
         order = question_type.split("_", 1)[0]
         examples.append(Example(
             id=f"{source.stem}:{index}", benchmark="paraphrased_tomi", context=context,
