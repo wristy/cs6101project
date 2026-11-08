@@ -87,7 +87,7 @@ def test_autotom_retains_automated_solver_and_maps_posterior_to_text(tmp_path):
             assert kwargs["model_name"] == "automated"
             assert kwargs["reduce_hypotheses"] and kwargs["back_inference"]
             assert not kwargs["no_model_adjustment"]
-            assert kwargs["llm"] == kwargs["hypo_llm"] == "Qwen/Qwen3.8-27B"
+            assert kwargs["llm"] == kwargs["hypo_llm"] == "XiaomiMiMo/MiMo-V2.6-Pro"
             assert "answer" not in kwargs
 
         def solve(self):

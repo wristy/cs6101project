@@ -11,8 +11,6 @@ from shared.models.client import ModelConfig
 
 class LiveRunner:
     def __init__(self, config: ModelConfig, item_seconds=1200):
-        if not config.revision:
-            raise ValueError("Pin and verify the served model revision before live inference")
         self.config = config
         self.item_seconds = item_seconds
 

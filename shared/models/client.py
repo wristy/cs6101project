@@ -1,6 +1,17 @@
-"""Small OpenAI-compatible client with explicit budgets and raw token scores."""
+"""One logged, budgeted client for every chat model in the project.
 
-from dataclasses import asdict, dataclass
+Providers are configured in shared/models/providers.py. Two kinds of call:
+
+- generate(): text, with thinking off and a check that the reply finished cleanly.
+- score_label(): the agreed A/B probability rule for AutoToM-style likelihoods. The model answers
+  one letter; we read the logprob of the token it wrote and return P(A) if it wrote "A" and
+  1 - P(B) if it wrote "B". This is the rule from the progress report. Probes showed MiMo on
+  DeepInfra never returns alternative tokens and ignores logit_bias, and GPT-6 Sol rejects
+  logit_bias; when GPT-6 Sol does return both letters they sum to ~1.0, so the rule matches
+  reading both. See probes/.
+"""
+
+from dataclasses import asdict, dataclass, field
 import json
 import math
 import os
@@ -16,15 +27,23 @@ class ProtocolError(RuntimeError):
 
 @dataclass(frozen=True)
 class ModelConfig:
-    model: str = "Qwen/Qwen3.8-27B"
-    revision: str | None = None
-    base_url: str = "http://127.0.0.1:8000/v1"
+    """Everything needed to call one model; stored with every result so runs are reproducible."""
+    model: str = "XiaomiMiMo/MiMo-V2.6-Pro"
+    provider: str = "deepinfra"
+    base_url: str = "https://api.deepinfra.com/v1/openai"
+    key_env: str = "DEEPINFRA_API_KEY"
+    token_param: str = "max_tokens"          # OpenAI's GPT-6 models take max_completion_tokens
+    scoring_max_tokens: int = 1              # GPT-6 Sol needs ~16; only the first token is read
+    extra: dict = field(default_factory=lambda: {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}})
     seed: int = 42
     max_tokens: int = 4096
     timeout: float = 180
     max_retries: int = 2
     max_calls: int = 500
-    top_logprobs: int = 20
+    top_logprobs: int = 5                    # OpenAI caps this at 5
+
+
+TRANSIENT = (APIConnectionError, APITimeoutError, InternalServerError, RateLimitError)
 
 
 class LLMClient:
@@ -33,8 +52,10 @@ class LLMClient:
         self.records = []
         self.log_path = Path(log_path) if log_path else None
         if transport is None:
-            sdk = OpenAI(base_url=config.base_url, api_key=os.getenv("OPENAI_API_KEY", "local"),
-                         timeout=config.timeout, max_retries=0)
+            key = os.getenv(config.key_env)
+            if not key:
+                raise RuntimeError(f"{config.key_env} is not set; add it to .env")
+            sdk = OpenAI(base_url=config.base_url, api_key=key, timeout=config.timeout, max_retries=0)
             transport = lambda request: sdk.chat.completions.create(**request).model_dump()
         self.transport = transport
 
@@ -45,15 +66,14 @@ class LLMClient:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.extend(history or [])
+        # AutoToM sends its likelihood prompts as a system message; we do the same when scoring.
         messages.append({"role": "system" if scoring else "user", "content": prompt})
-        request = dict(
-            model=self.config.model, messages=messages, temperature=0 if scoring else temperature, top_p=1,
-            seed=self.config.seed, max_tokens=1 if scoring else (max_tokens or self.config.max_tokens),
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
-        )
+        tokens = self.config.scoring_max_tokens if scoring else (max_tokens or self.config.max_tokens)
+        request = dict(model=self.config.model, messages=messages, seed=self.config.seed,
+                       temperature=0 if scoring else temperature, **{self.config.token_param: tokens},
+                       **json.loads(json.dumps(self.config.extra)))
         if scoring:
             request.update(logprobs=True, top_logprobs=self.config.top_logprobs)
-        transient = (APIConnectionError, APITimeoutError, InternalServerError, RateLimitError)
         for attempt in range(self.config.max_retries + 1):
             if len(self.records) >= self.config.max_calls:
                 raise RuntimeError("Model call budget exhausted")
@@ -65,8 +85,9 @@ class LLMClient:
                 return reply
             except Exception as error:
                 record.update(status="error", error_type=type(error).__name__)
-                if not isinstance(error, transient) or attempt == self.config.max_retries:
+                if not isinstance(error, TRANSIENT) or attempt == self.config.max_retries:
                     raise
+                time.sleep(2 ** attempt)
             finally:
                 record["seconds"] = time.monotonic() - started
                 self.records.append(record)
@@ -76,7 +97,8 @@ class LLMClient:
                         stream.write(json.dumps(record) + "\n")
 
     def generate(self, prompt, *, system_prompt=None, history=None, max_tokens=None, temperature=0):
-        reply = self._request(prompt, system_prompt=system_prompt, history=history, max_tokens=max_tokens, temperature=temperature)
+        reply = self._request(prompt, system_prompt=system_prompt, history=history, max_tokens=max_tokens,
+                              temperature=temperature)
         choice = reply["choices"][0]
         text = choice["message"].get("content")
         reasoning = choice["message"].get("reasoning_content") or choice["message"].get("reasoning")
@@ -87,18 +109,23 @@ class LLMClient:
         return text.strip()
 
     def score_label(self, prompt, label="A"):
+        """P(A) under the agreed rule: P(A) if the model wrote A, 1 - P(B) if it wrote B."""
+        if label != "A":
+            raise ValueError("Only P(A) for an A/B question is supported")
         reply = self._request(prompt, scoring=True)
         try:
-            scores = reply["choices"][0]["logprobs"]["content"][0]["top_logprobs"]
+            first = reply["choices"][0]["logprobs"]["content"][0]
+            token, logprob = first["token"].strip(), first["logprob"]
         except (KeyError, IndexError, TypeError) as error:
-            raise ProtocolError("Server did not return label logprobs") from error
-        for score in scores:
-            if score.get("bytes") == list(label.encode()) and score.get("token") == label:
-                logprob = score["logprob"]
-                if not math.isfinite(logprob) or logprob > 0:
-                    raise ProtocolError("Invalid label logprob")
-                return math.exp(logprob)
-        raise ProtocolError(f"Exact label {label!r} absent from top logprobs; no fallback probability used")
+            raise ProtocolError("Server did not return a logprob for the answer token") from error
+        if not math.isfinite(logprob) or logprob > 1e-9:
+            raise ProtocolError("Invalid answer logprob")
+        probability = min(math.exp(logprob), 1.0)
+        if token == "A":
+            return probability
+        if token == "B":
+            return 1 - probability
+        raise ProtocolError(f"Expected the answer A or B, got {token!r}")
 
     def usage(self):
         usage = {"calls": len(self.records), "prompt_tokens": 0, "completion_tokens": 0,

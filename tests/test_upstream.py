@@ -57,7 +57,7 @@ from shared.methods.worker import load_upstream
 
 def transport(request):
     return {"choices": [{"message": {"content": "A"}, "finish_reason": "stop",
-            "logprobs": {"content": [{"top_logprobs": [
+            "logprobs": {"content": [{"token": "A", "logprob": math.log(0.4), "top_logprobs": [
                 {"token": "A", "bytes": [65], "logprob": math.log(0.4)}]}]}}],
             "usage": {"prompt_tokens": 10, "completion_tokens": 1}}
 client = LLMClient(ModelConfig(), transport=transport)
@@ -72,6 +72,6 @@ powered = probs.get_likelihood("Ava sees a basket", "Ava looks in the basket", "
                                model=client.config.model, variable="Action", inf_agent="Ava", action_exponent=2)
 assert abs(powered - 0.16) < 1e-8
 assert utils.llm_request("Describe the scene", model=client.config.model) == ("A", 0.0)
-assert all(record["request"]["model"] == "Qwen/Qwen3.8-27B" for record in client.records)
+assert all(record["request"]["model"] == client.config.model for record in client.records)
 assert client.usage()["calls"] == 3
 ''', tmp_path)
