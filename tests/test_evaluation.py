@@ -74,3 +74,34 @@ def test_refuses_corrupt_result_file(tmp_path):
         stream.write("{broken")
     with pytest.raises(ValueError, match="Corrupt"):
         run_arm([example()], ARM, runner, tmp_path)
+
+
+def test_workers_answer_questions_at_once_and_resume_the_same_way(tmp_path):
+    import threading
+    import time
+
+    active, peak, lock = [0], [0], threading.Lock()
+
+    def runner(method, payload, directory):
+        with lock:
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+        time.sleep(0.05)
+        with lock:
+            active[0] -= 1
+        return {"status": "ok", "answer": "basket", "usage": {"calls": 1}}
+    items = [example(id=f"test:{i}") for i in range(8)]
+    records = run_arm(items[:6], ARM, runner, tmp_path / "a", workers=4)
+    assert peak[0] > 1 and sorted(r["id"] for r in records) == sorted(i.id for i in items[:6])
+    lines = (tmp_path / "a" / "predictions.jsonl").read_text().splitlines()
+    assert len(lines) == 6 and all(json.loads(line)["correct"] for line in lines)
+    serial = run_arm(items[:6], ARM, runner, tmp_path / "b", workers=1)
+    parallel_row, serial_row = summarize(records)[0], summarize(serial)[0]
+    assert {k: parallel_row[k] for k in ("total", "correct", "calls")} == \
+        {k: serial_row[k] for k in ("total", "correct", "calls")}
+
+
+def test_session_limit_stops_new_questions_with_workers(tmp_path):
+    records = run_arm([example(id=f"test:{i}") for i in range(4)], ARM,
+                      lambda *a: {"status": "ok", "answer": "basket"}, tmp_path, session_seconds=0, workers=2)
+    assert records == []

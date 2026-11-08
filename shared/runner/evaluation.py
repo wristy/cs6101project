@@ -7,10 +7,12 @@ one is refused, so one directory always holds one arm.
 """
 
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import threading
 import time
 
 from shared.runner.scoring import score
@@ -27,8 +29,13 @@ def _read_records(path):
         raise ValueError(f"Corrupt results; inspect {path} before resuming") from error
 
 
-def run_arm(examples, arm, runner, directory, session_seconds=14400):
-    """arm = {"name", "method", "model", "variant" (optional), ...}; runner(method, payload, dir)."""
+def run_arm(examples, arm, runner, directory, session_seconds=14400, workers=1):
+    """arm = {"name", "method", "model", "variant" (optional), ...}; runner(method, payload, dir).
+
+    workers > 1 answers that many questions at once (each in its own worker process). Every
+    question is still independent, so this changes wall time only; records are written in the
+    order questions finish, and summaries do not depend on that order.
+    """
     if arm["method"] not in METHODS:
         raise ValueError(f"Unknown method {arm['method']}")
     if arm.get("variant") and arm["method"] != "thoughttracing":
@@ -50,11 +57,12 @@ def run_arm(examples, arm, runner, directory, session_seconds=14400):
     if len(done) != len(records) or not done <= set(manifest["ids"]):
         raise ValueError(f"Duplicate or unexpected results; inspect {results_path}")
     started = time.monotonic()
-    for item in examples:
-        if item.id in done:
-            continue
+    lock = threading.Lock()
+
+    def answer(item):
+        # Checked when each question starts, so a session stops taking new questions on time.
         if time.monotonic() - started >= session_seconds:
-            break
+            return
         item_dir = directory / "items" / sha256(item.id.encode()).hexdigest()[:16]
         item_dir.mkdir(parents=True, exist_ok=True)
         item_started = time.monotonic()
@@ -68,12 +76,23 @@ def run_arm(examples, arm, runner, directory, session_seconds=14400):
                   "benchmark": item.benchmark, "category": item.category,
                   "belief_type": item.belief_type, "gold": item.answer,
                   "seconds": time.monotonic() - item_started}
-        with results_path.open("a") as stream:
-            stream.write(json.dumps(record, default=str) + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        records.append(record)
-        done.add(item.id)
+        with lock:
+            with results_path.open("a") as stream:
+                stream.write(json.dumps(record, default=str) + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            records.append(record)
+            done.add(item.id)
+
+    pending = [item for item in examples if item.id not in done]
+
+    if workers <= 1:
+        for item in pending:
+            answer(item)
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for _ in pool.map(answer, pending):
+                pass
     return records
 
 
