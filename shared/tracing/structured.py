@@ -9,9 +9,10 @@ final answer are unchanged. Only two steps change:
 - propagate(): same input as upstream, but asks for the updated hypothesis in the structure,
   showing the previous one in its structured form when we have it.
 
-`response_format` (JSON schema) is sent when the format check shows the provider needs and
-enforces it; either way every reply is parsed and validated, retried up to three times as
-upstream's prompting_for_ordered_list does, and counted.
+`response_format` (JSON schema) is off: as agreed, it is switched on only if the format check
+shows the model breaking the structure, and MiMo produced valid structure on all 100 checks
+without it (shared/tracing/format_check.py). Every reply is parsed and validated, retried up to
+three times as upstream's prompting_for_ordered_list does, and counted in structure_log.
 """
 
 from copy import deepcopy
@@ -89,7 +90,7 @@ def build_structured(upstream):
     HypothesesSetV3 = upstream.HypothesesSetV3
 
     class StructuredTracer(upstream.Tracer):
-        use_response_format = True
+        use_response_format = False
         tolerance = 3
 
         def hypothesis_format(self):

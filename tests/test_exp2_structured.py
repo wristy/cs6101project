@@ -95,7 +95,7 @@ tracer.args = type("A", (), {"n_hypotheses": 4})()
 tracer.get_agent_state = lambda agent, state: state
 initial = tracer.initialize({"state": "Ava is home.", "action": None}, {"state": "Ava sees home.", "action": None})
 assert initial.texts == ["Ava believes that apple is in basket."] * 4, initial.texts
-assert requests[0]["response_format"]["json_schema"]["strict"] is True
+assert requests[0].get("response_format") is None     # off: MiMo passed the format check without it
 assert requests[1]["temperature"] == 0.33           # retried after invalid JSON, as upstream
 tracer.setup_propagation = lambda h, s, p: {"target_agent": "Ava", "context_history": [], "perception_history": [],
                                             "context_and_perception_str": "past", "new_context": "now"}
