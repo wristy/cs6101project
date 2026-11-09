@@ -1,7 +1,7 @@
 """Experiment 5: embedding-based duplicate replacement in ThoughtTracing, on MMToM-QA.
 
-The control is Experiment 1's MiMo ThoughtTracing run. Set EXP5_THRESHOLD to the calibrated
-cosine threshold before the full run (default 0.85).
+The control is Experiment 1's MiMo ThoughtTracing run. The duplicate threshold defaults to the
+calibrated 0.931 (EXP5_THRESHOLD overrides it). Pilots before 9 November used 0.85.
 
     python -m experiments.exp5_rejuvenation.run --limit 2
 """

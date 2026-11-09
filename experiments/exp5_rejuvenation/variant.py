@@ -5,7 +5,7 @@ otherwise, if word-overlap diversity is below 0.25, it paraphrases every hypothe
 temperature 1. Here the resampling branch is unchanged, and the second branch becomes:
 
 1. Embed the hypotheses with Qwen3-Embedding-8B and flag pairs with cosine similarity above
-   THRESHOLD (starting at 0.85, to be calibrated on ~30 labelled pairs from saved traces).
+   THRESHOLD (0.931, calibrated on 30 labelled pairs from saved traces; see calibrate.py).
 2. From each flagged pair keep the earlier hypothesis and drop the later one.
 3. Generate replacements at temperature 0 that must differ from the kept hypotheses.
 4. Re-score all four with the upstream weighting step and replace the weights.
@@ -24,7 +24,9 @@ import colorful as cf
 from shared.bridge import extra_client
 from shared.models.embeddings import EmbeddingClient, cosine
 
-THRESHOLD = float(os.environ.get("EXP5_THRESHOLD", "0.85"))
+# Calibrated on 9 November (calibrate.py, 30 labelled pairs from the 3- and 10-question pilots):
+# the lowest value that flagged no pair of genuinely different hypotheses. EXP5_THRESHOLD overrides it.
+THRESHOLD = float(os.environ.get("EXP5_THRESHOLD", "0.931"))
 
 
 def duplicate_slots(vectors, threshold=THRESHOLD):

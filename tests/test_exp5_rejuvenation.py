@@ -76,3 +76,9 @@ assert bridge.extra_usage()["embed_calls"] == 1
 def test_duplicates_are_replaced_at_temperature_zero_and_all_weights_rescored():
     result = subprocess.run([sys.executable, "-c", SCRIPT], cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-3000:]
+
+
+def test_default_threshold_is_the_calibrated_one(monkeypatch):
+    import importlib
+    monkeypatch.delenv("EXP5_THRESHOLD", raising=False)
+    assert importlib.reload(variant).THRESHOLD == 0.931
