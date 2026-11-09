@@ -118,3 +118,10 @@ def test_nested_objects_render_as_clauses():
     hypothesis = {"triples": [{"subject": "Owen", "relation": "IsUnawareOf",
                                "object": {"subject": "Noah", "relation": "Moved", "object": "peach"}}]}
     assert v2b.render("Owen", hypothesis) == "Owen is unaware that Noah moved peach."
+
+
+def test_choice_check_sends_distinct_story_texts_without_questions():
+    from experiments.exp2a_mental_models import check_choice
+    texts = check_choice.stories(5)
+    assert len(texts) == len(set(texts)) >= 2
+    assert all("Question:" not in text for text in texts)

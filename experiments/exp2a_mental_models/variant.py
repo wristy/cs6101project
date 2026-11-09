@@ -31,25 +31,32 @@ class MentalModel:
 
 
 MODELS = [
-    MentalModel("belief", "Belief only: what the person perceived and what they therefore believe.",
+    MentalModel("belief", "Belief only: the person's actions follow from what they perceived and therefore believe; "
+                "what they want is obvious or plays no part.",
                 ["observation", "belief"], "{agent} observed {observation}, so {agent} believes {belief}.",
                 "observation (what {agent} perceived), belief (what {agent} therefore believes)."),
-    MentalModel("goal", "Goal only: what the person wants and the action it leads to.",
+    MentalModel("goal", "Goal only: the person's actions follow from what they want; what they believe about the "
+                "world is obvious or plays no part.",
                 ["goal", "plan"], "{agent} wants {goal}, so {agent} plans to {plan}.",
                 "goal (what {agent} wants), plan (what {agent} does or will do because of it)."),
-    MentalModel("belief_goal", "Belief and goal: what the person perceived, believes and wants.",
+    MentalModel("belief_goal", "Belief and goal: the person acts on what they want and on what they believe about where or "
+                "how things are, and those beliefs may be incomplete or wrong.",
                 ["observation", "belief", "goal"],
                 "{agent} observed {observation}, so {agent} believes {belief}; {agent} wants {goal}.",
                 "observation (what {agent} perceived), belief (what {agent} therefore believes), "
                 "goal (what {agent} wants)."),
-    MentalModel("higher_order", "Higher-order: what the person believes about another person's belief or goal.",
+    MentalModel("higher_order", "Higher-order: the person reasons about what another person believes or wants.",
                 ["other_person", "observation", "belief_about_other"],
                 "{agent} observed {observation}, so {agent} believes that {other_person} {belief_about_other}.",
                 "other_person (whose mind {agent} is thinking about), observation (what {agent} perceived), "
                 "belief_about_other (what {agent} believes that person thinks or wants)."),
 ]
-JEV_INSTRUCTIONS = ("Which kind of mental model is needed to understand the main person in this story? "
-                    "Pick the simplest kind that is enough.")
+# Reworded after the pilot: "pick the simplest kind that is enough" pushed every MMToM-QA story to
+# goal-only, although its stories mix belief and goal questions about a person searching a home
+# with partial knowledge. The question now asks what explains the person's actions.
+JEV_INSTRUCTIONS = ("Which mental states must be tracked to explain and predict the main person's actions in "
+                    "this story: what they believe, what they want, both, or what they think others "
+                    "believe or want?")
 
 
 def choose_model(jev, story):

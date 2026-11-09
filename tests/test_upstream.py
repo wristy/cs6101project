@@ -130,3 +130,29 @@ worker.main()
 assert seen["key"] is None, seen
 '''
     run_script(code, tmp_path)
+
+
+def test_autotom_finds_every_prompt_it_reads_from_our_runtime_folder(tmp_path):
+    """verify_variable reads prompts/prompts_gpt-4o/ by name. If it is missing, AutoToM swallows
+    the error and drops every extracted action and goal on BigToM (found in the pilot)."""
+    run_script('''
+import os, sys
+from pathlib import Path
+from shared.bridge import configure
+from shared.models.client import LLMClient, ModelConfig
+from shared.methods.worker import load_upstream, prepare_autotom_runtime
+
+def transport(request):
+    return {"choices": [{"message": {"content": "A"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+client = LLMClient(ModelConfig(), transport=transport)
+configure(client)
+runtime = Path(sys.argv[1]) / "model"
+runtime.mkdir()
+prepare_autotom_runtime(runtime, client.config.model)
+os.chdir(runtime)
+load_upstream("autotom")
+import ElementExtractor
+assert ElementExtractor.verify_variable("Action", ["A", "Noor makes the cappuccino."]) == "A"
+assert client.usage()["calls"] == 1
+''', tmp_path)

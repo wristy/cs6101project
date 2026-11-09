@@ -51,12 +51,18 @@ def load_upstream(method):
 
 def prepare_autotom_runtime(runtime, model):
     """AutoToM reads prompts/prompts_<llm>/ relative to the working directory and ships only the
-    GPT-4o set, which it uses for every model. Point prompts/prompts_<our model> at that set."""
-    link = Path(runtime) / "prompts" / f"prompts_{model}"
-    if not link.exists():
-        link.parent.mkdir(parents=True, exist_ok=True)
-        link.symlink_to(ROOT / "external/AutoToM/model/prompts/prompts_gpt-4o", target_is_directory=True)
-    return link
+    GPT-4o set, which it uses for every model. Some functions (verify_variable, verify_hypo) read
+    prompts/prompts_gpt-4o/ by that name, so both names must resolve; a missing file there is
+    swallowed by AutoToM and silently drops the extracted action, goal or observation."""
+    source = ROOT / "external/AutoToM/model/prompts/prompts_gpt-4o"
+    folder = Path(runtime) / "prompts"
+    folder.mkdir(parents=True, exist_ok=True)
+    for name in {f"prompts_{model}", "prompts_gpt-4o"}:
+        link = folder / name
+        if not link.exists():
+            link.parent.mkdir(parents=True, exist_ok=True)
+            link.symlink_to(source, target_is_directory=True)
+    return folder / f"prompts_{model}"
 
 
 def load_variant(spec, upstream):
