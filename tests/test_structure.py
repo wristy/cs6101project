@@ -18,7 +18,7 @@ SHARED_MODULES = [
     "shared.tracing.format_check", "experiments.exp2a_mental_models.run", "experiments.exp2a_mental_models.variant",
     "experiments.exp2b_triples.run", "experiments.exp2b_triples.variant", "experiments.exp5_rejuvenation.run",
     "experiments.exp5_rejuvenation.variant", "experiments.exp6_summary.run", "experiments.exp6_summary.variant", "shared.runner", "shared.runner.evaluation",
-    "shared.tracing", "shared.analysis", "shared.analysis.stats", "shared.analysis.aggregate", "shared.runner.pilot", "experiments",
+    "shared.tracing", "shared.analysis", "shared.analysis.stats", "shared.analysis.aggregate", "shared.runner.pilot", "experiments.exp5_rejuvenation.calibrate", "experiments",
 ]
 
 
