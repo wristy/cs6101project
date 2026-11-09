@@ -22,6 +22,27 @@ Changes are enabled by `TOM_RESEARCH_BACKEND=1` inside isolated method workers:
   `args`, which does not exist when the solver is imported.
 - Unused AutoToM video and GPU imports are lazy. An unused import of the absent
   `get_logits` function is removed so the released solver can load.
+- Generated replies cut off at `max_tokens` are kept (and counted as truncated),
+  as on ThoughtTracing's path: AutoToM parses only the start of each reply.
+
+Upstream bugs found in the full run, each reproduced offline from saved call
+logs and fixed with the smallest change that keeps the intended behaviour:
+
+- BigToM questions where the agent has not acted yet (`BayesianInference.infer`,
+  `init_belief`): the forward-action branch stored the initial-belief prior as a
+  scalar that `hypo_propagation` then indexes, and the belief branch returned 3
+  values where every caller unpacks 4. The prior is now a one-element array and
+  the belief branch returns the same 4-tuple as every other path. As released,
+  AutoToM could not answer these question types at all.
+- Second-order and nested questions (`Nested.get_nested_states`): one
+  `update_state` call omits its required `dataset_name`; the timestep alignment
+  indexes the inferred agent's action column, which the extracted table can
+  lack; and nested episode names embed a whole belief sentence, which can pass
+  the 255-byte file-name limit (now shortened with a hash).
+- Reply shapes the parsers did not handle: a bare sentence where
+  `hypothesis_generation(_no_observation)` asks for `["..."]` is read as a
+  one-item list, and an extraction reply that drops its leading `"A"` flag is
+  read as the evidence it contains.
 
 As a backstop, the worker blocks any remaining direct OpenAI call in AutoToM
 modules and removes `OPENAI_API_KEY` from the environment once our own client

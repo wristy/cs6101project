@@ -156,3 +156,55 @@ import ElementExtractor
 assert ElementExtractor.verify_variable("Action", ["A", "Noor makes the cappuccino."]) == "A"
 assert client.usage()["calls"] == 1
 ''', tmp_path)
+
+
+def test_autotom_survives_the_reply_shapes_that_crashed_the_full_run(tmp_path):
+    """Full-run failures, each reproduced from saved call logs: a bare sentence where AutoToM asks
+    for ["..."], an extraction reply without its "A" flag, and a reply cut off at max_tokens."""
+    run_script('''
+import os, sys
+from pathlib import Path
+from shared.bridge import configure
+from shared.models.client import LLMClient, ModelConfig
+from shared.methods.worker import load_upstream, prepare_autotom_runtime
+
+replies = iter(["Karen has no observations of the Object A's location.",
+                "Karen sees that Object E is in Room C cabinet.",
+                "B) Parker cannot observe the sentence. The sentence describes"])
+def transport(request):
+    content = next(replies)
+    return {"choices": [{"message": {"content": content}, "finish_reason": "length" if "describes" in content else "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+client = LLMClient(ModelConfig(), transport=transport)
+configure(client)
+runtime = Path(sys.argv[1]) / "model"; runtime.mkdir()
+prepare_autotom_runtime(runtime, client.config.model)
+os.chdir(runtime)
+load_upstream("autotom")
+import ElementExtractor, utils
+assert ElementExtractor.hypothesis_generation_no_observation(["Karen thinks A"], "Karen", client.config.model) == \\
+    ["Karen has no observations of the Object A's location."]
+assert ElementExtractor.hypothesis_generation([], "Karen close cabinet", "story", "Karen", "Observation", 1, client.config.model) == \\
+    ["Karen sees that Object E is in Room C cabinet."]
+assert utils.parse_extraction(["Amina is in Egypt. There is a crack."]) == "Amina is in Egypt. There is a crack."
+assert utils.parse_extraction(["A", "Amina is in Egypt."]) == "Amina is in Egypt."
+assert utils.parse_extraction(["B", ""]) == "NONE"
+reply, _ = utils.llm_request("Determine if Parker can observe ...", model=client.config.model)
+assert reply.startswith("B)") and client.usage()["truncated"] == 1
+''', tmp_path)
+
+
+def test_autotom_patch_fixes_its_bigtom_and_nested_code_paths():
+    """Upstream bugs found in the full run: the BigToM no-action branch stores a scalar prior and
+    returns 3 values where callers unpack 4; the nested path omits update_state's dataset_name and
+    builds file names from whole sentences."""
+    model = ROOT / "external/AutoToM/model"
+    if not (model / "Nested.py").exists():
+        pytest.skip("Fetch pinned upstream sources with scripts/bootstrap.sh")
+    inference = (model / "BayesianInference.py").read_text()
+    assert "prior_probs=max(probs)," not in inference
+    assert inference.count("prior_probs=np.array([max(probs)])") == 2
+    assert inference.count("{\"variables\": self.variables},  #") == 2
+    nested = (model / "Nested.py").read_text()
+    assert "self.dataset_name,  # upstream omits" in nested
+    assert "belief_key" in nested and '.get(f"{self.inf_agent_name}\'s Action", "NONE")' in nested

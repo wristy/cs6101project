@@ -127,7 +127,9 @@ def run_method(method, payload, client, workdir, upstream=None, variant=None):
             if not isinstance(trace, str) or not trace.strip():
                 raise ProtocolError("ThoughtTracing returned an empty trace")
             prompt = prompts.traced_prompt(dataset, tt_input, trace)
-        answer = client.generate(prompt, max_tokens=prompts.MAX_TOKENS[dataset])
+        # A final answer cut off at the benchmark's token budget is graded as written (and counted
+        # as truncated) rather than discarded: the grading rules read only the start of a reply.
+        answer = client.generate(prompt, max_tokens=prompts.MAX_TOKENS[dataset], allow_truncated=True)
         result = {"status": "ok", "answer": answer, "trace": trace, "usage": {**client.usage(), **extra_usage()}}
         if method == "thoughttracing":
             result["weights_log"] = weights_log

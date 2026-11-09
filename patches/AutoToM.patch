@@ -1,5 +1,5 @@
 diff --git a/model/BayesianInference.py b/model/BayesianInference.py
-index 3c62a11..85c4024 100644
+index 3c62a11..2646076 100644
 --- a/model/BayesianInference.py
 +++ b/model/BayesianInference.py
 @@ -1,6 +1,6 @@
@@ -10,6 +10,98 @@ index 3c62a11..85c4024 100644
  import itertools
  from ElementExtractor import *
  from utils import *
+@@ -401,14 +401,14 @@ class BayesianInferenceModel:
+                     in_model=True,
+                     is_observed=True,
+                     possible_values=[init_belief],
+-                    prior_probs=max(probs),
++                    prior_probs=np.array([max(probs)]),  # upstream stores a scalar; hypo_propagation indexes it
+                 )
+                 new_prev_belief = Variable(
+                     name="Previous Belief",
+                     in_model=True,
+                     is_observed=True,
+                     possible_values=[init_belief],
+-                    prior_probs=max(probs),
++                    prior_probs=np.array([max(probs)]),  # upstream stores a scalar; hypo_propagation indexes it
+                 )
+ 
+                 self.variables["Belief"] = (
+@@ -448,6 +448,7 @@ class BayesianInferenceModel:
+                                 probs[0],
+                             ),
+                         ],
++                        {"variables": self.variables},  # upstream returns 3 values; callers unpack 4 (results, recorder, nodes, NLDs)
+                     )
+                 return (
+                     probs,
+@@ -472,6 +473,7 @@ class BayesianInferenceModel:
+                             probs[1],
+                         ),
+                     ],
++                    {"variables": self.variables},  # as above
+                 )
+         self.rewrite_graph()
+ 
+diff --git a/model/ElementExtractor.py b/model/ElementExtractor.py
+index 4a557f6..b8dee80 100644
+--- a/model/ElementExtractor.py
++++ b/model/ElementExtractor.py
+@@ -124,6 +124,8 @@ def hypothesis_generation_no_observation(info, character, llm, verbose=False):
+ 
+     if "\n" in resp:
+         resp = resp.split("\n")[-1]
++    if "[" not in resp:  # the model answered with a bare sentence instead of ["..."]
++        resp = "[" + json.dumps(resp.strip()) + "]"
+     if resp[0] != "[" and "[" in resp:
+         resp = "[" + resp.split("[")[1]
+     elif resp[-1] != "]" and "]" in resp:
+@@ -201,6 +203,8 @@ def hypothesis_generation(
+ 
+     if "\n" in resp:
+         resp = resp.split("\n")[-1]
++    if "[" not in resp:  # the model answered with a bare sentence instead of ["..."]
++        resp = "[" + json.dumps(resp.strip()) + "]"
+     if resp[0] != "[" and "[" in resp:
+         resp = "[" + resp.split("[")[1]
+     elif resp[-1] != "]" and "]" in resp:
+diff --git a/model/Nested.py b/model/Nested.py
+index 540e737..836b36f 100644
+--- a/model/Nested.py
++++ b/model/Nested.py
+@@ -24,9 +24,9 @@ def get_nested_states(
+     last_align = -1
+     for i, vars in enumerate(variables):
+         # Align the timestamps
+-        while (
+-            values[i][f"{self.inf_agent_name}'s Action"]
+-            != gt_values[j][f"{self.inf_agent_name}'s Action"]
++        while (  # .get: the extracted table can lack the inferred agent's column
++            values[i].get(f"{self.inf_agent_name}'s Action", "NONE")
++            != gt_values[j].get(f"{self.inf_agent_name}'s Action", "NONE")
+         ):
+             if self.verbose:
+                 print(
+@@ -68,6 +68,7 @@ def get_nested_states(
+                     gt_values[0][f"{self.inf_agent_name}'s Action"],
+                     self.llm,
+                     self.verbose,
++                    self.dataset_name,  # upstream omits this required argument
+                 )
+         story_now = now_init_state + " " + values[i]["Chunk"]
+         last_align = j
+@@ -89,7 +90,10 @@ def get_nested_states(
+             else:
+                 full = False
+                 
+-            nested_episode_name = f"{self.episode_name}_nestedChunk_{i}_{s[0]}"
++            # Upstream puts the whole belief sentence in the name, which can exceed the 255-byte file-name limit.
++            import hashlib
++            belief_key = s[0] if len(s[0]) <= 80 else s[0][:60] + "_" + hashlib.sha1(s[0].encode()).hexdigest()[:10]
++            nested_episode_name = f"{self.episode_name}_nestedChunk_{i}_{belief_key}"
+             nested_choices = []
+             for _ in s:
+                 nested_choices.append(f'{self.first_agent_name} believes that {_}')
 diff --git a/model/ProbSolver.py b/model/ProbSolver.py
 index 29d27ce..459d1ce 100644
 --- a/model/ProbSolver.py
@@ -63,7 +155,7 @@ index 4282e36..e501fd1 100644
          global cost_of_estimating_likelihood
          global times_of_estimating
 diff --git a/model/utils.py b/model/utils.py
-index 063d5fb..14ee110 100644
+index 063d5fb..af8efbd 100644
 --- a/model/utils.py
 +++ b/model/utils.py
 @@ -5,12 +5,8 @@ import string
@@ -113,7 +205,7 @@ index 063d5fb..14ee110 100644
      API_TOKEN = os.environ["LLAMA_API_KEY"]
      cache_directory = ""
      model_name = "meta-llama/Llama-3.1-8B-Instruct"
-@@ -648,6 +650,20 @@ def gpt_request(
+@@ -648,6 +650,23 @@ def gpt_request(
      global times_of_information_extracting
      global times_of_proposing_hypotheses
      global global_seed
@@ -125,7 +217,10 @@ index 063d5fb..14ee110 100644
 +            if action_exponent is not None and variable is not None and "Action" in variable:
 +                result = math.pow(result, action_exponent)
 +        else:
-+            result = client.generate(prompt, temperature=temperature, max_tokens=max_tokens)
++            # A reply cut off at max_tokens is kept (and counted as truncated), as on the
++            # ThoughtTracing path: AutoToM parses only its start (a letter or a list).
++            result = client.generate(prompt, temperature=temperature, max_tokens=max_tokens,
++                                     allow_truncated=True)
 +        if hypo:
 +            times_of_proposing_hypotheses += 1
 +        else:
@@ -134,3 +229,15 @@ index 063d5fb..14ee110 100644
      
      if seed is None:
          seed = global_seed
+@@ -1083,7 +1102,10 @@ def number_to_letter_mapping(number):
+ 
+ 
+ def parse_extraction(resp):
+-    if resp[0][0] == "A":
++    if len(resp) == 1 and str(resp[0]).strip() not in ("A", "B", ""):
++        # The model gave the evidence but dropped the leading "A" flag; upstream indexes resp[1].
++        return str(resp[0]).strip().replace('"', "").strip()
++    if resp[0][0] == "A" and len(resp) > 1:
+         return resp[1].strip().replace('"', "").strip()
+     else:
+         return "NONE"

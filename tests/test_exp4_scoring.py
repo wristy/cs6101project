@@ -61,6 +61,12 @@ for spec in ("experiments.exp4_scoring.ab", "experiments.exp4_scoring.noul"):
                                       contexts, perceptions, "Ava walks to the kitchen.")
     weights = result["weights"]
     assert abs(sum(weights) - 1) < 1e-9 and weights[0] > weights[1], (spec, weights)
+    # Upstream's resampling copies weight_details["reasonings"]; it crashed 7 full-run questions.
+    texts = ["Ava wants food from the kitchen.", "Ava wants to sleep."]
+    hypotheses = upstream.HypothesesSetV3("Ava", contexts, perceptions, texts, weights)
+    hypotheses.weight_details = result
+    resampled = upstream.resample_hypotheses_with_other_info(hypotheses, 1.0)
+    assert len(resampled.texts) == 2 and len(resampled.weight_details["reasonings"]) == 2
     if spec.endswith("ab"):
         assert list(result["raw_scores"]) == [0.8, 1 - 0.8]
         prompt = client.records[0]["request"]["messages"][-1]["content"]

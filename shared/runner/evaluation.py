@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 import json
 import os
+import shutil
 from pathlib import Path
 import threading
 import time
@@ -29,12 +30,38 @@ def _read_records(path):
         raise ValueError(f"Corrupt results; inspect {path} before resuming") from error
 
 
-def run_arm(examples, arm, runner, directory, session_seconds=14400, workers=1):
+def drop_errors(directory):
+    """Remove the error records (crashes, timeouts) from a results folder so they run again.
+
+    Each dropped record is appended to retried.jsonl, and its per-question folder is deleted:
+    AutoToM caches its extraction tables there and would otherwise reuse the failed attempt's.
+    Invalid answers (a method declining, or an unparseable reply) are results, not crashes, and
+    stay. Returns the number of records dropped."""
+    directory = Path(directory)
+    results_path = directory / "predictions.jsonl"
+    records = _read_records(results_path)
+    failed = [record for record in records if record.get("status") == "error"]
+    if not failed:
+        return 0
+    with (directory / "retried.jsonl").open("a") as stream:
+        for record in failed:
+            stream.write(json.dumps(record, default=str) + "\n")
+    kept = [record for record in records if record.get("status") != "error"]
+    temporary = results_path.with_suffix(".tmp")
+    temporary.write_text("".join(json.dumps(record, default=str) + "\n" for record in kept))
+    os.replace(temporary, results_path)
+    for record in failed:
+        shutil.rmtree(directory / "items" / sha256(record["id"].encode()).hexdigest()[:16], ignore_errors=True)
+    return len(failed)
+
+
+def run_arm(examples, arm, runner, directory, session_seconds=14400, workers=1, retry_errors=False):
     """arm = {"name", "method", "model", "variant" (optional), ...}; runner(method, payload, dir).
 
     workers > 1 answers that many questions at once (each in its own worker process). Every
     question is still independent, so this changes wall time only; records are written in the
     order questions finish, and summaries do not depend on that order.
+    retry_errors=True first drops earlier error records (see drop_errors) so those questions run again.
     """
     if arm["method"] not in METHODS:
         raise ValueError(f"Unknown method {arm['method']}")
@@ -52,6 +79,8 @@ def run_arm(examples, arm, runner, directory, session_seconds=14400, workers=1):
     else:
         manifest_path.write_text(json.dumps(manifest, indent=1) + "\n")
     results_path = directory / "predictions.jsonl"
+    if retry_errors:
+        drop_errors(directory)
     records = _read_records(results_path)
     done = {record["id"] for record in records}
     if len(done) != len(records) or not done <= set(manifest["ids"]):

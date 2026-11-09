@@ -7,7 +7,10 @@ One folder per experiment. Each holds:
 
 Run one experiment with `python -m experiments.<folder>.run [--limit N] [--workers N]`, or every
 planned arm at once with `python -m shared.runner.pilot --limit N` (`--limit 0` for all questions),
-which also projects cost and time. Exp 5's duplicate threshold was calibrated with
+which also projects cost and time. Runs resume: questions already answered are skipped. Add
+`--retry-errors` to run again only the questions whose earlier attempt crashed or timed out (their
+old records move to `retried.jsonl`). Each question may take up to 60 minutes and 1,500 model
+calls (`--max-calls`). Exp 5's duplicate threshold was calibrated with
 `experiments/exp5_rejuvenation/calibrate.py`.
 
 | Folder | Experiment | Benchmark | Changes |

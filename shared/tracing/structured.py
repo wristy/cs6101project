@@ -9,10 +9,12 @@ final answer are unchanged. Only two steps change:
 - propagate(): same input as upstream, but asks for the updated hypothesis in the structure,
   showing the previous one in its structured form when we have it.
 
-`response_format` (JSON schema) is off: as agreed, it is switched on only if the format check
-shows the model breaking the structure, and MiMo produced valid structure on all 100 checks
-without it (shared/tracing/format_check.py). Every reply is parsed and validated, retried up to
-three times as upstream's prompting_for_ordered_list does, and counted in structure_log.
+`response_format` (JSON schema) is off on the first try: as agreed, the schema is enforced only
+once the model breaks the structure, so retries (up to three tries in all, as upstream's
+prompting_for_ordered_list) send it. MiMo passed the 10-story format check without it, but broke
+the 2b structure on about a quarter of the full run's questions. A list longer than its
+maxItems (more than n hypotheses, or more than 4 triples) keeps its first items, as upstream
+keeps the first n hypotheses. Every try is logged in structure_log.
 """
 
 from copy import deepcopy
@@ -75,6 +77,23 @@ def parse_json(text):
         raise StructureError(f"not JSON: {error}") from error
 
 
+def trim(value, schema, defs=None):
+    """Keep the first maxItems of any list that is too long, as upstream's
+    prompting_for_ordered_list keeps the first n hypotheses when given more. Nothing else is
+    changed; validate() still rejects everything else that breaks the schema."""
+    defs = defs if defs is not None else schema.get("$defs", {})
+    if "$ref" in schema:
+        return trim(value, defs[schema["$ref"].split("/")[-1]], defs)
+    if schema.get("type") == "array" and isinstance(value, list):
+        if "maxItems" in schema:
+            value = value[:schema["maxItems"]]
+        return [trim(item, schema.get("items", {}), defs) for item in value]
+    if schema.get("type") == "object" and isinstance(value, dict):
+        properties = schema.get("properties", {})
+        return {key: trim(item, properties[key], defs) if key in properties else item for key, item in value.items()}
+    return value
+
+
 def list_schema(item_schema, n):
     """{"hypotheses": [n items]}, keeping item $defs at the top level."""
     item = {key: value for key, value in item_schema.items() if key != "$defs"}
@@ -99,16 +118,16 @@ def build_structured(upstream):
 
         def ask_structured(self, prompt, schema, system_prompt=None):
             log = self.__dict__.setdefault("structure_log", [])
-            response_format = ({"type": "json_schema", "json_schema": {"name": "hypotheses", "schema": schema,
-                                                                       "strict": True}}
-                               if self.use_response_format else None)
+            enforced = {"type": "json_schema", "json_schema": {"name": "hypotheses", "schema": schema, "strict": True}}
             temperature, error = 0, None
             for attempt in range(self.tolerance):
+                # As agreed: ask plainly first; enforce the schema only once the model has broken it.
+                response_format = enforced if (self.use_response_format or attempt > 0) else None
                 reply = get_client().generate(prompt, system_prompt=system_prompt, temperature=temperature,
                                               max_tokens=1024, response_format=response_format)
                 try:
-                    value = validate(parse_json(reply), schema)
-                    log.append({"ok": True, "attempt": attempt})
+                    value = validate(trim(parse_json(reply), schema), schema)
+                    log.append({"ok": True, "attempt": attempt, "enforced": response_format is not None})
                     return value
                 except StructureError as failure:
                     error = failure

@@ -2,6 +2,7 @@
 
     python -m shared.runner.pilot                 # N=10, every experiment, both models
     python -m shared.runner.pilot --limit 3 --experiment exp1_baseline
+    python -m shared.runner.pilot --limit 0 --workers 8 --retry-errors   # full run; rerun crashed questions
 
 One command runs each experiment's PLAN (Exp 1 for MiMo on four benchmarks plus GPT-6 Sol on
 BigToM, and each extension on its benchmark) on the same first N questions, so extension arms are
@@ -63,9 +64,10 @@ def project(records, model, full_size, workers):
             "full_hours": round(seconds * full_size / workers / 3600, 2)}
 
 
-def run_one(spec, limit, workers, root):
+def run_one(spec, limit, workers, root, retry_errors=False, max_calls=1500):
     name, arm, model, benchmark = spec
-    experiment.run(name, arm, model, benchmark, limit, root=root, workers=workers)
+    experiment.run(name, arm, model, benchmark, limit, root=root, workers=workers, retry_errors=retry_errors,
+                   max_calls=max_calls)
     path = experiment.result_dir(name, model, benchmark, arm["name"], limit, root) / "predictions.jsonl"
     records = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     row = {"experiment": name, "model": model, "benchmark": benchmark, "arm": arm["name"]}
@@ -83,6 +85,10 @@ def main():
     parser.add_argument("--arms-at-once", type=int, default=4, help="arms run side by side")
     parser.add_argument("--experiment", action="append", choices=EXPERIMENTS)
     parser.add_argument("--model", action="append", choices=sorted(PRICES.keys() - {"embedding"}))
+    parser.add_argument("--retry-errors", action="store_true",
+                        help="run again the questions whose earlier attempt crashed or timed out")
+    parser.add_argument("--max-calls", type=int, default=1500,
+                        help="model-call budget per question (AutoToM's nested ExploreToM runs passed 500)")
     args = parser.parse_args()
     runs = planned_runs(args.experiment or EXPERIMENTS, args.model)
     root = ROOT / "results"
@@ -90,7 +96,7 @@ def main():
     started = time.monotonic()
     rows = []
     with ThreadPoolExecutor(max_workers=args.arms_at_once) as pool:
-        futures = {pool.submit(run_one, spec, args.limit, args.workers, root): spec for spec in runs}
+        futures = {pool.submit(run_one, spec, args.limit, args.workers, root, args.retry_errors, args.max_calls): spec for spec in runs}
         for future, spec in futures.items():
             try:
                 row = future.result()

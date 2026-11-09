@@ -105,3 +105,47 @@ def test_session_limit_stops_new_questions_with_workers(tmp_path):
     records = run_arm([example(id=f"test:{i}") for i in range(4)], ARM,
                       lambda *a: {"status": "ok", "answer": "basket"}, tmp_path, session_seconds=0, workers=2)
     assert records == []
+
+
+def test_retry_errors_reruns_only_crashed_questions(tmp_path):
+    import json
+    from hashlib import sha256
+    from shared.runner.evaluation import drop_errors, run_arm
+    from shared.benchmarks.common import Example
+
+    examples = [Example(id=f"q{i}", benchmark="paraphrased_tomi", context="c", question="Where?",
+                        choices=("box", "basket"), answer="box", target="A", category="first_order")
+                for i in range(3)]
+    calls = []
+
+    def runner(method, payload, directory):
+        calls.append(payload["id"])
+        if len(calls) <= 3 and payload["id"] == "q1":
+            return {"status": "error", "error": "IndexError: boom"}
+        return {"status": "ok", "answer": "the box"}
+
+    arm = {"name": "plain", "method": "plain", "model": "m"}
+    run_arm(examples, arm, runner, tmp_path)
+    item = tmp_path / "items" / sha256(b"q1").hexdigest()[:16]
+    (item / "stale-cache.csv").write_text("from the failed attempt")
+    run_arm(examples, arm, runner, tmp_path)                    # plain resume: nothing reruns
+    assert calls == ["q0", "q1", "q2"]
+    records = run_arm(examples, arm, runner, tmp_path, retry_errors=True)
+    assert calls[3:] == ["q1"] and not (item / "stale-cache.csv").exists()
+    assert sorted((r["id"], r["status"]) for r in records) == [("q0", "ok"), ("q1", "ok"), ("q2", "ok")]
+    retried = [json.loads(line) for line in (tmp_path / "retried.jsonl").read_text().splitlines()]
+    assert [r["id"] for r in retried] == ["q1"]
+    assert drop_errors(tmp_path) == 0
+
+
+def test_timed_out_question_keeps_its_token_usage(tmp_path):
+    import json
+    from shared.methods.runner import usage_from_log
+    log = tmp_path / "calls.jsonl"
+    lines = [{"status": "ok", "seconds": 2.0, "response": str({"usage": {"prompt_tokens": 100, "completion_tokens": 7}})},
+             {"status": "ok", "seconds": 1.0, "response": {"usage": {"prompt_tokens": 50, "completion_tokens": 3}}},
+             {"status": "error", "seconds": 9.0}]
+    log.write_text("".join(json.dumps(line) + "\n" for line in lines))
+    usage = usage_from_log(log)
+    assert (usage["calls"], usage["prompt_tokens"], usage["completion_tokens"], usage["seconds"]) == (2, 150, 10, 3.0)
+    assert usage_from_log(tmp_path / "missing.jsonl")["calls"] == 0

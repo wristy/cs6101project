@@ -52,7 +52,10 @@ def _context(tracer, context_history, perception_history):
 
 def _results(prompts, probabilities):
     weights = normalise(probabilities)
-    return {"prompts": prompts, "raw_scores": np.asarray(probabilities, dtype=float),
+    # Upstream's resample step copies weight_details["reasonings"] per resampled hypothesis; these
+    # scorers generate no reasoning text, so the raw probability stands in for it.
+    return {"prompts": prompts, "reasonings": [f"P = {p:.4f}" for p in probabilities],
+            "raw_scores": np.asarray(probabilities, dtype=float),
             "weights": weights, "weight_spread": float(weights.max() - weights.min())}
 
 

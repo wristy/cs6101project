@@ -9,8 +9,41 @@ import sys
 from shared.models.client import ModelConfig
 
 
+def usage_from_log(path):
+    """Token usage recovered from a worker's calls.jsonl, for a worker that was stopped before it
+    could report its own (the call log is written as each call returns)."""
+    import ast
+    usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "seconds": 0.0, "usage_missing": 0,
+             "recovered_from_log": True}
+    if not Path(path).exists():
+        return usage
+    for line in Path(path).read_text().splitlines():
+        if not line.strip():
+            continue
+        record = json.loads(line)
+        if record.get("status") != "ok":
+            continue
+        usage["calls"] += 1
+        usage["seconds"] += float(record.get("seconds") or 0)
+        response = record.get("response")
+        if isinstance(response, str):
+            try:
+                response = ast.literal_eval(response)
+            except (ValueError, SyntaxError):
+                response = None
+        reported = (response or {}).get("usage") if isinstance(response, dict) else None
+        if not reported:
+            usage["usage_missing"] += 1
+            continue
+        usage["prompt_tokens"] += reported.get("prompt_tokens") or 0
+        usage["completion_tokens"] += reported.get("completion_tokens") or 0
+    return usage
+
+
 class LiveRunner:
-    def __init__(self, config: ModelConfig, variant=None, item_seconds=1200):
+    # AutoToM's nested reasoning on long ExploreToM stories needs 300-450 calls (~20-25 min with
+    # MiMo); the per-question call budget (max_calls) still bounds cost.
+    def __init__(self, config: ModelConfig, variant=None, item_seconds=3600):
         self.config = config
         self.variant = variant
         self.item_seconds = item_seconds
@@ -30,7 +63,8 @@ class LiveRunner:
                     timeout=self.item_seconds,
                 )
             except subprocess.TimeoutExpired:
-                return {"status": "error", "error": "Item wall-time budget exceeded; inspect calls.jsonl"}
+                return {"status": "error", "error": "Item wall-time budget exceeded; inspect calls.jsonl",
+                        "usage": usage_from_log(directory / "calls.jsonl")}
         if process.returncode or not result_path.exists():
             raise RuntimeError(f"Worker failed; inspect {directory / 'worker.log'}")
         return json.loads(result_path.read_text())

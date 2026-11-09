@@ -81,7 +81,7 @@ from shared.methods.worker import load_upstream, load_variant
 
 triple = {"triples": [{"subject": "Ava", "relation": "Believes",
                        "object": {"subject": "apple", "relation": "LocatedIn", "object": "basket"}}]}
-replies = iter(["not json", json.dumps({"hypotheses": [triple] * 4})] + [json.dumps(triple)] * 4)
+replies = iter(["not json", json.dumps({"hypotheses": [triple] * 5})] + [json.dumps(triple)] * 4)
 requests = []
 def transport(request):
     requests.append(request)
@@ -97,6 +97,7 @@ initial = tracer.initialize({"state": "Ava is home.", "action": None}, {"state":
 assert initial.texts == ["Ava believes that apple is in basket."] * 4, initial.texts
 assert requests[0].get("response_format") is None     # off: MiMo passed the format check without it
 assert requests[1]["temperature"] == 0.33           # retried after invalid JSON, as upstream
+assert requests[1]["response_format"]["json_schema"]["strict"] is True   # enforced once broken
 tracer.setup_propagation = lambda h, s, p: {"target_agent": "Ava", "context_history": [], "perception_history": [],
                                             "context_and_perception_str": "past", "new_context": "now"}
 updated = tracer.propagate(initial, {}, {})
@@ -125,3 +126,17 @@ def test_choice_check_sends_distinct_story_texts_without_questions():
     texts = check_choice.stories(5)
     assert len(texts) == len(set(texts)) >= 2
     assert all("Question:" not in text for text in texts)
+
+
+def test_overlong_lists_keep_their_first_items_like_upstream():
+    from experiments.exp2b_triples.variant import SCHEMA
+    from shared.tracing.structured import list_schema, trim, validate
+    triple = {"subject": "Ava", "relation": "Believes",
+              "object": {"subject": "apple", "relation": "LocatedIn", "object": "basket"}}
+    hypothesis = {"triples": [triple] * 6}
+    assert len(validate(trim(hypothesis, SCHEMA), SCHEMA)["triples"]) == 4
+    many = {"hypotheses": [hypothesis] * 5}
+    trimmed = validate(trim(many, list_schema(SCHEMA, 4)), list_schema(SCHEMA, 4))
+    assert len(trimmed["hypotheses"]) == 4 and all(len(h["triples"]) == 4 for h in trimmed["hypotheses"])
+    with pytest.raises(StructureError):        # a bare world fact at the top level is still refused
+        validate(trim({"triples": [{"subject": "peach", "relation": "LocatedIn", "object": "box"}]}, SCHEMA), SCHEMA)
