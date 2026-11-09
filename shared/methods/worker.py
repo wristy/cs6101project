@@ -79,6 +79,23 @@ def tracer_args(client, workdir, dataset):
     )
 
 
+def record_weights(tracer):
+    """Log every weighting step's raw scores and weights, before any resampling. Upstream keeps
+    them only in memory; the comparison of weight spread across arms (Exp 4) needs them. The
+    wrapper returns the weigh result unchanged."""
+    log, weigh = [], getattr(tracer, "weigh", None)
+    if weigh is None:
+        return log
+
+    def logged(*args, **kwargs):
+        results = weigh(*args, **kwargs)
+        log.append({"raw_scores": [float(x) for x in results["raw_scores"]],
+                    "weights": [float(x) for x in results["weights"]]})
+        return results
+    tracer.weigh = logged
+    return log
+
+
 def run_method(method, payload, client, workdir, upstream=None, variant=None):
     """Run one method on one question. The payload is Example.inference_input(): no gold answer."""
     configure(client)
@@ -93,6 +110,7 @@ def run_method(method, payload, client, workdir, upstream=None, variant=None):
         else:
             upstream = upstream or load_upstream(method)
             tracer = load_variant(variant, upstream)(tracer_args(client, workdir, dataset))
+            weights_log = record_weights(tracer)
             # As in ThoughtTracing's scripts: the whole input goes in and the tracer finds the
             # target agent itself; on MMToM-QA the script finds it from the question alone.
             if dataset == "mmtom":
@@ -104,7 +122,10 @@ def run_method(method, payload, client, workdir, upstream=None, variant=None):
                 raise ProtocolError("ThoughtTracing returned an empty trace")
             prompt = prompts.traced_prompt(dataset, tt_input, trace)
         answer = client.generate(prompt, max_tokens=prompts.MAX_TOKENS[dataset])
-        return {"status": "ok", "answer": answer, "trace": trace, "usage": {**client.usage(), **extra_usage()}}
+        result = {"status": "ok", "answer": answer, "trace": trace, "usage": {**client.usage(), **extra_usage()}}
+        if method == "thoughttracing":
+            result["weights_log"] = weights_log
+        return result
     if method != "autotom":
         raise ValueError(f"Unknown method {method}")
     upstream = upstream or load_upstream(method)
@@ -138,9 +159,13 @@ def run_method(method, payload, client, workdir, upstream=None, variant=None):
             or (probabilities < 0).any() or not np.isclose(probabilities.sum(), 1)):
         raise ProtocolError("AutoToM returned an invalid posterior")
     pick = int(probabilities.argmin() if "LEAST likely" in question else probabilities.argmax())
-    return {"status": "ok", "answer": candidates[pick],
+    # Like AutoToM's own argmax, a tie goes to the first option. Flag it so the analysis can
+    # report how often AutoToM's posterior did not separate the options at all.
+    best = probabilities[pick]
+    tie = int(np.isclose(probabilities, best, rtol=0, atol=1e-6).sum()) > 1
+    return {"status": "ok", "answer": candidates[pick], "tie": tie,
             "posterior": probabilities.tolist(), "hypotheses": candidates,
-            "model_record": model_record, "usage": client.usage()}
+            "model_record": model_record, "usage": {**client.usage(), **extra_usage()}}
 
 
 def main():

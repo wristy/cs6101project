@@ -165,3 +165,38 @@ def test_autotom_declining_a_question_is_scored_wrong_not_a_crash(tmp_path):
     upstream = SimpleNamespace(ProblemSolver=Solver, argmax=max, argmin=min)
     result = run_method("autotom", tomi_payload(states=["s"], actions=["a"]), client, tmp_path, upstream=upstream)
     assert result["status"] == "invalid" and result["nested"] is True and "answer" not in result
+
+
+def test_every_weighting_step_is_logged_unchanged(tmp_path):
+    import numpy as np
+
+    class Tracer:
+        def __init__(self, args):
+            pass
+
+        def weigh(self, hypotheses, action, mode):
+            return {"raw_scores": np.array([0.9, 0.1]), "weights": np.array([0.7, 0.3]), "extra": "kept"}
+
+        def trace(self, text, target_agent=None):
+            assert self.weigh(None, "act", "prompting")["extra"] == "kept"
+            self.weigh(None, "act2", "prompting")
+            return "trace"
+
+    client = LLMClient(ModelConfig(), transport=lambda request: reply("basket"))
+    result = run_method("thoughttracing", tomi_payload(), client, tmp_path, upstream=SimpleNamespace(Tracer=Tracer))
+    assert result["weights_log"] == [{"raw_scores": [0.9, 0.1], "weights": [0.7, 0.3]}] * 2
+
+
+def test_autotom_ties_go_to_the_first_option_and_are_flagged(tmp_path):
+    class Solver:
+        def __init__(self, **kwargs):
+            pass
+
+        def solve(self):
+            return [0.5, 0.5], {}
+
+    client = LLMClient(ModelConfig(), transport=lambda request: reply("unused"))
+    upstream = SimpleNamespace(ProblemSolver=Solver, argmax=max, argmin=min)
+    payload = tomi_payload(states=["s"], actions=["a"])
+    result = run_method("autotom", payload, client, tmp_path, upstream=upstream)
+    assert result["tie"] is True and result["answer"] == payload["choices"][0]

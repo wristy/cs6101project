@@ -108,6 +108,7 @@ def summarize(records):
                "correct": sum(r["correct"] for r in selected),
                "errors": sum(r["status"] == "error" for r in selected),
                "invalid": sum(r["status"] == "invalid" for r in selected),
+               "ties": sum(bool(r.get("tie")) for r in selected),
                "seconds": sum(r["seconds"] for r in selected)}
         row["accuracy"] = row["correct"] / total
         for key in ("calls", "prompt_tokens", "completion_tokens", "usage_missing"):

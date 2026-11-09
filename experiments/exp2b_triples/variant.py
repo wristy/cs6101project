@@ -34,10 +34,17 @@ SCHEMA = {
 }
 
 
+# With a nested triple as object, a relation reads as a clause: "is unaware that Noah moved the peach".
+CLAUSE_PHRASES = {"Sees": "sees that", "IsUnawareOf": "is unaware that", "Wants": "wants it to be that",
+                  "Likes": "likes that", "Dislikes": "dislikes that"}
+
+
 def render_triple(triple):
     obj = triple["object"]
-    obj_text = render_triple(obj) if isinstance(obj, dict) else obj
-    return f"{triple['subject']} {PHRASES[triple['relation']]} {obj_text}"
+    if isinstance(obj, dict):
+        phrase = CLAUSE_PHRASES.get(triple["relation"], PHRASES[triple["relation"]])
+        return f"{triple['subject']} {phrase} {render_triple(obj)}"
+    return f"{triple['subject']} {PHRASES[triple['relation']]} {obj}"
 
 
 def render(agent, hypothesis):

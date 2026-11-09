@@ -112,3 +112,9 @@ assert [entry["ok"] for entry in tracer.structure_log] == [False, True, True, Tr
 def test_structured_tracer_initializes_and_propagates_real_hypothesis_sets():
     result = subprocess.run([sys.executable, "-c", SCRIPT], cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-3000:]
+
+
+def test_nested_objects_render_as_clauses():
+    hypothesis = {"triples": [{"subject": "Owen", "relation": "IsUnawareOf",
+                               "object": {"subject": "Noah", "relation": "Moved", "object": "peach"}}]}
+    assert v2b.render("Owen", hypothesis) == "Owen is unaware that Noah moved peach."

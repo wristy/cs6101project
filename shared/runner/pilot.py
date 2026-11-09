@@ -52,6 +52,7 @@ def project(records, model, full_size, workers):
     return {"n": n, "correct": sum(r["correct"] for r in records),
             "errors": sum(r["status"] == "error" for r in records),
             "invalid": sum(r["status"] == "invalid" for r in records),
+            "ties": sum(bool(r.get("tie")) for r in records),
             "calls_per_q": round(mean("calls"), 1), "prompt_tokens_per_q": round(mean("prompt_tokens")),
             "completion_tokens_per_q": round(mean("completion_tokens")),
             "score_fallbacks": sum(u.get("score_fallbacks", 0) or 0 for u in usage),
