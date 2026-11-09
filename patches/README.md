@@ -13,10 +13,19 @@ Changes are enabled by `TOM_RESEARCH_BACKEND=1` inside isolated method workers:
 
 - ThoughtTracing loads the shared `interact`/`batch_interact` agent without
   importing unused cloud or GPU clients.
-- AutoToM routes generation and raw `P(A)` likelihood calls to the shared client.
-  No GPT-name gate, A/B renormalization, or missing-token fallback is used there.
+- AutoToM routes every LLM call to the shared client: generation, the A/B
+  likelihoods (`probs.py`, `utils.py`) and the question classifiers and initial
+  model proposal in `model_adjustment.gpt_call`, which upstream sends to GPT-4o.
+  When the first token is neither A nor B, the likelihood falls back to 0.1, as
+  AutoToM itself does for GPT-4o; each fallback is counted.
+- `ProbSolver.py` reads `self.back_inference` instead of the `__main__` global
+  `args`, which does not exist when the solver is imported.
 - Unused AutoToM video and GPU imports are lazy. An unused import of the absent
   `get_logits` function is removed so the released solver can load.
+
+As a backstop, the worker blocks any remaining direct OpenAI call in AutoToM
+modules and removes `OPENAI_API_KEY` from the environment once our own client
+holds its key, so an unpatched path fails instead of reaching a real API.
 
 No particle propagation, likelihood prompt, Bayesian marginalization, or model
 adjustment algorithm is replaced. The model backend and preprocessing model are
@@ -32,4 +41,5 @@ tests, then regenerate the patches with:
 ```
 
 Do not export unrelated changes. `scripts/bootstrap.sh` refuses an unexpected
-source revision or a conflicting patch instead of resetting a checkout.
+source revision. When an older version of a patch is applied, it restores the
+pinned files and applies the current patch.

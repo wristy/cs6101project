@@ -15,3 +15,6 @@ shared/benchmarks/data/exploretom/*.csv
 results/**/items/**/result.json
 results/**/items/**/worker.log
 results/**/items/**/results/
+.DS_Store
+# Per-question scratch (traces, call logs) stays on disk; predictions.jsonl and summaries are committed.
+results/**/items/

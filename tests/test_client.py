@@ -1,4 +1,4 @@
-"""Step 2: model connections and the agreed A/B probability rule (offline, scripted replies)."""
+"""Model connections and the agreed A/B probability rule (offline, scripted replies)."""
 
 import math
 

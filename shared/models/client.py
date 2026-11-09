@@ -2,13 +2,14 @@
 
 Providers are configured in shared/models/providers.py. Two kinds of call:
 
-- generate(): text, with thinking off and a check that the reply finished cleanly.
+- generate(): text, with thinking off and a check that the reply finished cleanly (upstream
+  ThoughtTracing calls may accept a reply cut off at their own max_tokens, as its own client does).
 - score_label(): the agreed A/B probability rule for AutoToM-style likelihoods. The model answers
   one letter; we read the logprob of the token it wrote and return P(A) if it wrote "A" and
   1 - P(B) if it wrote "B". This is the rule from the progress report. Probes showed MiMo on
   DeepInfra never returns alternative tokens and ignores logit_bias, and GPT-6 Sol rejects
   logit_bias; when GPT-6 Sol does return both letters they sum to ~1.0, so the rule matches
-  reading both. See probes/.
+  reading both (API probes run on 8 November).
 """
 
 from dataclasses import asdict, dataclass, field

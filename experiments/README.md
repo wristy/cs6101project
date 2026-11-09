@@ -2,8 +2,13 @@
 
 One folder per experiment. Each holds:
 
-- `run.py`: runs the experiment's arms through the shared runner and writes results to `results/<experiment>/<arm>/`.
+- `run.py`: runs the experiment's arms through the shared runner and writes results to `results/<experiment>/<model>/<benchmark>/<arm>/` (pilots under `.../<model>/pilot-N/...`).
 - `variant.py` (Experiments 2–6): a small subclass of ThoughtTracing's `Tracer` that replaces one step.
+
+Run one experiment with `python -m experiments.<folder>.run [--limit N] [--workers N]`, or every
+planned arm at once with `python -m shared.runner.pilot --limit N` (`--limit 0` for all questions),
+which also projects cost and time. Exp 5's duplicate threshold was calibrated with
+`experiments/exp5_rejuvenation/calibrate.py`.
 
 | Folder | Experiment | Benchmark | Changes |
 | --- | --- | --- | --- |

@@ -1,4 +1,4 @@
-"""Step 1: the shared + experiments layout is in place and the old pilot scaffolding is gone."""
+"""The shared + experiments layout is in place and the old pilot scaffolding is gone."""
 
 import importlib
 from pathlib import Path
@@ -28,12 +28,12 @@ def test_shared_modules_import(module):
 
 
 def test_layout_folders_exist():
-    for folder in ["shared/benchmarks/data", "experiments", "results/aggregate", "probes", "patches", "docs/reference"]:
+    for folder in ["shared/benchmarks/data", "experiments", "results/aggregate", "patches"]:
         assert (ROOT / folder).is_dir(), folder
 
 
 def test_pilot_scaffolding_removed():
-    for path in ["src", "notebooks", "configs", "data"]:
+    for path in ["src", "notebooks", "configs", "data", "docs", "probes"]:
         assert not (ROOT / path).exists(), path
 
 

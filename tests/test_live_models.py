@@ -1,4 +1,4 @@
-"""Step 2 live checks: 7 small real API calls in total, plus 2 Jev calls. Run with `pytest --live`.
+"""Live model checks: 7 small real API calls in total, plus 2 Jev calls. Run with `pytest --live`.
 
 Each test skips if its key is missing from .env. Call logs go to results/live-tests/ (git-ignored).
 """

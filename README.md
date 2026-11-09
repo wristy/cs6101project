@@ -16,8 +16,6 @@ Each experiment changes one ThoughtTracing step. ThoughtTracing stays question-a
 | `experiments/expN_*/` | One folder per experiment: `run.py`, plus `variant.py` for Experiments 2–6 (see `experiments/README.md`) |
 | `results/` | Per-question records per experiment and arm; `results/aggregate/` for tables and figures |
 | `external/` + `patches/` | The official ThoughtTracing and AutoToM code at pinned commits, with small patches that route their LLM calls to our client (see `patches/README.md`) |
-| `probes/` | One-off API probes (logprob behaviour of MiMo and GPT-6 Sol) and their results |
-| `docs/reference/` | Papers, proposal and notes |
 
 ## Setup
 

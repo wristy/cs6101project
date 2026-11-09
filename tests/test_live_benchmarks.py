@@ -1,4 +1,4 @@
-"""Step 3 live check: up to 4 MiMo calls, one frozen question per benchmark. Run with `pytest --live`.
+"""Live benchmark check: up to 4 MiMo calls, one frozen question per benchmark. Run with `pytest --live`.
 
 This only checks that a loaded question reaches the model intact and gets a usable answer back;
 accuracy is measured by the experiments, not here.
