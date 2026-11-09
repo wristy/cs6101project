@@ -1,0 +1,26 @@
+[
+ {
+  "arm": "autotom",
+  "benchmark": "bigtom",
+  "method": "autotom",
+  "total": 249,
+  "correct": 201,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 15204.185748121585,
+  "accuracy": 0.8072289156626506,
+  "calls": 7976,
+  "prompt_tokens": 2451536,
+  "completion_tokens": 93654,
+  "usage_missing": 32,
+  "accuracy[false_belief]": 0.8873239436619719,
+  "accuracy[true_belief]": 0.7009345794392523,
+  "accuracy[backward_belief_false_belief]": 0.8285714285714286,
+  "accuracy[backward_belief_true_belief]": 0.6153846153846154,
+  "accuracy[forward_action_false_belief]": 0.7727272727272727,
+  "accuracy[forward_action_true_belief]": 0.6285714285714286,
+  "accuracy[forward_belief_false_belief]": 0.9411764705882353,
+  "accuracy[forward_belief_true_belief]": 0.9583333333333334
+ }
+]

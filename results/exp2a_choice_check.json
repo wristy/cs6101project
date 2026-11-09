@@ -1,0 +1,234 @@
+{
+ "counts": {
+  "belief_goal": 20
+ },
+ "records": [
+  {
+   "probabilities": {
+    "belief": 0.18,
+    "goal": 0.07,
+    "belief_goal": 0.75,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.67,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.07,
+    "goal": 0.21,
+    "belief_goal": 0.72,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.63,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.07,
+    "goal": 0.19,
+    "belief_goal": 0.74,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.65,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.06,
+    "goal": 0.26,
+    "belief_goal": 0.68,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.57,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.26,
+    "goal": 0.08,
+    "belief_goal": 0.66,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.55,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.18,
+    "goal": 0.06,
+    "belief_goal": 0.76,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.68,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.23,
+    "goal": 0.1,
+    "belief_goal": 0.67,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.56,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.11,
+    "goal": 0.11,
+    "belief_goal": 0.78,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.71,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.09,
+    "goal": 0.04,
+    "belief_goal": 0.87,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.83,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.18,
+    "goal": 0.09,
+    "belief_goal": 0.73,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.64,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.27,
+    "goal": 0.09,
+    "belief_goal": 0.64,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.52,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.28,
+    "goal": 0.1,
+    "belief_goal": 0.62,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.49,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.04,
+    "goal": 0.17,
+    "belief_goal": 0.79,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.72,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.15,
+    "goal": 0.04,
+    "belief_goal": 0.81,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.75,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.2,
+    "goal": 0.06,
+    "belief_goal": 0.74,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.65,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.09,
+    "goal": 0.18,
+    "belief_goal": 0.73,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.64,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.1,
+    "goal": 0.18,
+    "belief_goal": 0.72,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.63,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.26,
+    "goal": 0.05,
+    "belief_goal": 0.69,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.59,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.22,
+    "goal": 0.08,
+    "belief_goal": 0.7,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.6,
+   "chosen": "belief_goal"
+  },
+  {
+   "probabilities": {
+    "belief": 0.06,
+    "goal": 0.05,
+    "belief_goal": 0.89,
+    "higher_order": 0.0
+   },
+   "jev_choice": "belief_goal",
+   "confidence": 0.85,
+   "chosen": "belief_goal"
+  }
+ ],
+ "usage": {
+  "jev_calls": 20,
+  "jev_input_tokens": 15131,
+  "jev_models": [
+   "jev-1.13.0"
+  ]
+ }
+}

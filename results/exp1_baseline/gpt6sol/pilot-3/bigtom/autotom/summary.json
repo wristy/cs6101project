@@ -1,0 +1,20 @@
+[
+ {
+  "arm": "autotom",
+  "benchmark": "bigtom",
+  "method": "autotom",
+  "total": 3,
+  "correct": 3,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 128.91560333408415,
+  "accuracy": 1.0,
+  "calls": 76,
+  "prompt_tokens": 23185,
+  "completion_tokens": 887,
+  "usage_missing": 0,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[backward_belief_false_belief]": 1.0
+ }
+]

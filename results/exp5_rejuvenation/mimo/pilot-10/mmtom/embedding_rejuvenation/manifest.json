@@ -1,0 +1,21 @@
+{
+ "arm": {
+  "name": "embedding_rejuvenation",
+  "method": "thoughttracing",
+  "variant": "experiments.exp5_rejuvenation.variant",
+  "model": "mimo",
+  "model_config": "XiaomiMiMo/MiMo-V2.6-Pro"
+ },
+ "ids": [
+  "mmtom:367",
+  "mmtom:54",
+  "mmtom:547",
+  "mmtom:348",
+  "mmtom:400",
+  "mmtom:11",
+  "mmtom:423",
+  "mmtom:552",
+  "mmtom:276",
+  "mmtom:422"
+ ]
+}

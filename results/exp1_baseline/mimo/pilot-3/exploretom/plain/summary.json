@@ -1,0 +1,20 @@
+[
+ {
+  "arm": "plain",
+  "benchmark": "exploretom",
+  "method": "plain",
+  "total": 3,
+  "correct": 1,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 7.090119333937764,
+  "accuracy": 0.3333333333333333,
+  "calls": 3,
+  "prompt_tokens": 1416,
+  "completion_tokens": 42,
+  "usage_missing": 0,
+  "accuracy[false_belief]": 0.3333333333333333,
+  "accuracy[first_order_false_belief]": 0.3333333333333333
+ }
+]

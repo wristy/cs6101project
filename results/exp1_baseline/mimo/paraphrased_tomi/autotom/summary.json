@@ -1,0 +1,28 @@
+[
+ {
+  "arm": "autotom",
+  "benchmark": "paraphrased_tomi",
+  "method": "autotom",
+  "total": 200,
+  "correct": 125,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 65947.6876142039,
+  "accuracy": 0.625,
+  "calls": 35183,
+  "prompt_tokens": 7161554,
+  "completion_tokens": 437329,
+  "usage_missing": 72,
+  "accuracy[false_belief]": 0.45,
+  "accuracy[true_belief]": 0.8,
+  "accuracy[first_order_0_no_tom]": 0.8,
+  "accuracy[first_order_0_tom]": 0.44,
+  "accuracy[first_order_1_no_tom]": 0.8,
+  "accuracy[first_order_1_tom]": 0.48,
+  "accuracy[second_order_0_no_tom]": 0.8,
+  "accuracy[second_order_0_tom]": 0.4,
+  "accuracy[second_order_1_no_tom]": 0.8,
+  "accuracy[second_order_1_tom]": 0.48
+ }
+]

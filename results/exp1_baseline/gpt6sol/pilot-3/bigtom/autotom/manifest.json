@@ -1,0 +1,13 @@
+{
+ "arm": {
+  "name": "autotom",
+  "method": "autotom",
+  "model": "gpt6sol",
+  "model_config": "gpt-6-sol"
+ },
+ "ids": [
+  "bigtom:0",
+  "bigtom:2",
+  "bigtom:3"
+ ]
+}

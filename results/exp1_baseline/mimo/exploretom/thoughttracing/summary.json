@@ -1,0 +1,24 @@
+[
+ {
+  "arm": "thoughttracing",
+  "benchmark": "exploretom",
+  "method": "thoughttracing",
+  "total": 200,
+  "correct": 95,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 48770.88107307721,
+  "accuracy": 0.475,
+  "calls": 6605,
+  "prompt_tokens": 3501000,
+  "completion_tokens": 667393,
+  "usage_missing": 85,
+  "accuracy[false_belief]": 0.63,
+  "accuracy[true_belief]": 0.32,
+  "accuracy[first_order_false_belief]": 0.66,
+  "accuracy[first_order_true_belief]": 0.46,
+  "accuracy[second_order_false_belief]": 0.6,
+  "accuracy[second_order_true_belief]": 0.18
+ }
+]

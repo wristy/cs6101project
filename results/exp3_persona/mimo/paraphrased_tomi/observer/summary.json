@@ -1,0 +1,28 @@
+[
+ {
+  "arm": "observer",
+  "benchmark": "paraphrased_tomi",
+  "method": "thoughttracing",
+  "total": 200,
+  "correct": 158,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 40408.76339180174,
+  "accuracy": 0.79,
+  "calls": 6391,
+  "prompt_tokens": 2527254,
+  "completion_tokens": 650668,
+  "usage_missing": 45,
+  "accuracy[false_belief]": 0.84,
+  "accuracy[true_belief]": 0.74,
+  "accuracy[first_order_0_no_tom]": 0.8,
+  "accuracy[first_order_0_tom]": 0.96,
+  "accuracy[first_order_1_no_tom]": 0.76,
+  "accuracy[first_order_1_tom]": 1.0,
+  "accuracy[second_order_0_no_tom]": 0.68,
+  "accuracy[second_order_0_tom]": 0.6,
+  "accuracy[second_order_1_no_tom]": 0.72,
+  "accuracy[second_order_1_tom]": 0.8
+ }
+]

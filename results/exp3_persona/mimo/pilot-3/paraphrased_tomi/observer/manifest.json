@@ -1,0 +1,14 @@
+{
+ "arm": {
+  "name": "observer",
+  "method": "thoughttracing",
+  "variant": "experiments.exp3_persona.variant",
+  "model": "mimo",
+  "model_config": "XiaomiMiMo/MiMo-V2.6-Pro"
+ },
+ "ids": [
+  "test:2760",
+  "test:1538",
+  "test:248"
+ ]
+}

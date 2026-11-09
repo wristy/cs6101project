@@ -1,0 +1,13 @@
+{
+ "arm": {
+  "name": "plain",
+  "method": "plain",
+  "model": "mimo",
+  "model_config": "XiaomiMiMo/MiMo-V2.6-Pro"
+ },
+ "ids": [
+  "mmtom:367",
+  "mmtom:54",
+  "mmtom:547"
+ ]
+}

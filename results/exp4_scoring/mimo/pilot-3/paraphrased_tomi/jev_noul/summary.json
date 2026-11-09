@@ -1,0 +1,22 @@
+[
+ {
+  "arm": "jev_noul",
+  "benchmark": "paraphrased_tomi",
+  "method": "thoughttracing",
+  "total": 3,
+  "correct": 2,
+  "errors": 0,
+  "invalid": 0,
+  "seconds": 116.61343129107263,
+  "accuracy": 0.6666666666666666,
+  "calls": 62,
+  "prompt_tokens": 20252,
+  "completion_tokens": 4525,
+  "usage_missing": 0,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[true_belief]": 0.0,
+  "accuracy[first_order_1_tom]": 1.0,
+  "accuracy[second_order_0_no_tom]": 0.0,
+  "accuracy[second_order_1_tom]": 1.0
+ }
+]

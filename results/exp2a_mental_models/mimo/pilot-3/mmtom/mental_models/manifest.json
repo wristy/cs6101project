@@ -1,0 +1,14 @@
+{
+ "arm": {
+  "name": "mental_models",
+  "method": "thoughttracing",
+  "variant": "experiments.exp2a_mental_models.variant",
+  "model": "mimo",
+  "model_config": "XiaomiMiMo/MiMo-V2.6-Pro"
+ },
+ "ids": [
+  "mmtom:367",
+  "mmtom:54",
+  "mmtom:547"
+ ]
+}

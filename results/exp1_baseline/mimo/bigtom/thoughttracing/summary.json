@@ -1,0 +1,26 @@
+[
+ {
+  "arm": "thoughttracing",
+  "benchmark": "bigtom",
+  "method": "thoughttracing",
+  "total": 249,
+  "correct": 244,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 31547.199804287055,
+  "accuracy": 0.9799196787148594,
+  "calls": 5615,
+  "prompt_tokens": 2224319,
+  "completion_tokens": 431506,
+  "usage_missing": 51,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[true_belief]": 0.9532710280373832,
+  "accuracy[backward_belief_false_belief]": 1.0,
+  "accuracy[backward_belief_true_belief]": 0.9230769230769231,
+  "accuracy[forward_action_false_belief]": 1.0,
+  "accuracy[forward_action_true_belief]": 0.9857142857142858,
+  "accuracy[forward_belief_false_belief]": 1.0,
+  "accuracy[forward_belief_true_belief]": 0.875
+ }
+]

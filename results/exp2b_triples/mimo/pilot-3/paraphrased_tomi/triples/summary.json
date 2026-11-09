@@ -1,0 +1,22 @@
+[
+ {
+  "arm": "triples",
+  "benchmark": "paraphrased_tomi",
+  "method": "thoughttracing",
+  "total": 3,
+  "correct": 3,
+  "errors": 0,
+  "invalid": 0,
+  "seconds": 339.9214336669538,
+  "accuracy": 1.0,
+  "calls": 91,
+  "prompt_tokens": 33938,
+  "completion_tokens": 9728,
+  "usage_missing": 1,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[true_belief]": 1.0,
+  "accuracy[first_order_1_tom]": 1.0,
+  "accuracy[second_order_0_no_tom]": 1.0,
+  "accuracy[second_order_1_tom]": 1.0
+ }
+]

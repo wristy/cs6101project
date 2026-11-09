@@ -1,0 +1,23 @@
+experiment,model,benchmark,arm,n,correct,errors,invalid,ties,calls_per_q,prompt_tokens_per_q,completion_tokens_per_q,score_fallbacks,truncated,seconds_per_q,cost_per_q,full_questions,full_cost_usd,full_jev_input_tokens,full_hours,first_error
+exp1_baseline,mimo,bigtom,plain,249,247,0,0,0,1.0,183,17,0,0,8.2,8e-05,249,0.02,0,0.07,
+exp1_baseline,mimo,bigtom,autotom,249,201,0,0,0,32.0,9846,376,0,0,61.1,0.00413,249,1.03,0,0.53,
+exp1_baseline,mimo,bigtom,thoughttracing,249,244,0,0,0,22.6,8933,1733,0,5,126.7,0.00484,249,1.2,0,1.1,
+exp1_baseline,mimo,mmtom,plain,200,90,0,0,0,1.0,397,3,0,0,4.0,0.00016,200,0.03,0,0.03,
+exp1_baseline,mimo,mmtom,autotom,200,129,0,0,0,59.8,12634,307,199,0,143.8,0.00517,200,1.03,0,1.0,
+exp1_baseline,mimo,mmtom,thoughttracing,200,123,0,0,0,35.9,18957,3853,0,11,233.5,0.0104,200,2.08,0,1.62,
+exp1_baseline,mimo,paraphrased_tomi,plain,200,116,0,0,0,1.0,129,16,0,1,3.1,6e-05,200,0.01,0,0.02,
+exp1_baseline,mimo,paraphrased_tomi,autotom,200,125,0,0,0,175.9,35808,2187,18,0,329.7,0.01567,200,3.13,0,2.29,
+exp1_baseline,mimo,paraphrased_tomi,thoughttracing,200,148,0,0,0,31.9,12653,3251,0,21,205.6,0.00747,200,1.49,0,1.43,
+exp1_baseline,mimo,exploretom,plain,200,107,0,0,0,1.0,416,13,0,0,2.3,0.00017,200,0.03,0,0.02,
+exp1_baseline,mimo,exploretom,autotom,200,118,4,0,0,236.9,61111,6144,70,10,496.2,0.02863,200,5.73,0,3.45,RuntimeError: Model call budget exhausted
+exp1_baseline,mimo,exploretom,thoughttracing,200,95,0,0,0,33.0,17505,3337,0,1,243.9,0.00943,200,1.89,0,1.69,
+exp1_baseline,gpt6sol,bigtom,plain,249,248,0,0,0,1.0,177,18,0,0,2.1,0.00054,249,0.13,0,0.02,
+exp1_baseline,gpt6sol,bigtom,autotom,249,203,0,0,42,25.7,7737,311,0,0,32.1,0.01859,249,4.63,0,0.28,
+exp1_baseline,gpt6sol,bigtom,thoughttracing,249,240,0,0,0,23.6,7422,828,0,0,48.9,0.02312,249,5.76,0,0.42,
+exp2a_mental_models,mimo,mmtom,mental_models,200,119,0,0,0,36.9,16986,3071,0,23,209.0,0.00902,200,1.8,155980,1.45,
+exp2b_triples,mimo,paraphrased_tomi,triples,200,148,0,0,0,33.4,12622,3312,0,12,150.2,0.00751,200,1.5,0,1.04,
+exp3_persona,mimo,paraphrased_tomi,observer,200,158,0,0,0,32.0,12636,3253,0,11,202.0,0.00747,200,1.49,0,1.4,
+exp4_scoring,mimo,paraphrased_tomi,autotom_ab,200,148,0,0,0,31.9,11656,2087,49,4,130.0,0.00617,200,1.23,0,0.9,
+exp4_scoring,mimo,paraphrased_tomi,jev_noul,200,150,0,0,0,21.9,7967,2102,0,3,103.9,0.00475,200,0.95,981180,0.72,
+exp5_rejuvenation,mimo,mmtom,embedding_rejuvenation,200,129,1,0,0,42.5,22534,4764,0,20,233.5,0.01257,200,2.51,0,1.62,"RateLimitError: Error code: 429 - {'error': {'message': 'Model busy, retry later', 'type': 'invalid_request_error', 'param': None, 'code': 'engine_overloaded'}}"
+exp6_summary,mimo,mmtom,summary,200,131,0,0,0,38.4,16940,3818,0,12,214.2,0.00958,200,1.92,0,1.49,

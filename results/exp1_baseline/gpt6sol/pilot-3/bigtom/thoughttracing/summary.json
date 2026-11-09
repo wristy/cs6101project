@@ -1,0 +1,20 @@
+[
+ {
+  "arm": "thoughttracing",
+  "benchmark": "bigtom",
+  "method": "thoughttracing",
+  "total": 3,
+  "correct": 2,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 190.40647833398543,
+  "accuracy": 0.6666666666666666,
+  "calls": 105,
+  "prompt_tokens": 32013,
+  "completion_tokens": 3512,
+  "usage_missing": 1,
+  "accuracy[false_belief]": 0.6666666666666666,
+  "accuracy[backward_belief_false_belief]": 0.6666666666666666
+ }
+]

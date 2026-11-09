@@ -1,0 +1,14 @@
+{
+ "arm": {
+  "name": "autotom_ab",
+  "method": "thoughttracing",
+  "variant": "experiments.exp4_scoring.ab",
+  "model": "mimo",
+  "model_config": "XiaomiMiMo/MiMo-V2.6-Pro"
+ },
+ "ids": [
+  "test:2760",
+  "test:1538",
+  "test:248"
+ ]
+}

@@ -1,0 +1,24 @@
+[
+ {
+  "arm": "autotom",
+  "benchmark": "exploretom",
+  "method": "autotom",
+  "total": 200,
+  "correct": 118,
+  "errors": 4,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 99239.71283495717,
+  "accuracy": 0.59,
+  "calls": 47379,
+  "prompt_tokens": 12222287,
+  "completion_tokens": 1228784,
+  "usage_missing": 120,
+  "accuracy[false_belief]": 0.44,
+  "accuracy[true_belief]": 0.74,
+  "accuracy[first_order_false_belief]": 0.4,
+  "accuracy[first_order_true_belief]": 0.7,
+  "accuracy[second_order_false_belief]": 0.48,
+  "accuracy[second_order_true_belief]": 0.78
+ }
+]

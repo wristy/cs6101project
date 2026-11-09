@@ -1,0 +1,122 @@
+{
+ "1": {
+  "cosine": 0.9074,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#1"
+ },
+ "2": {
+  "cosine": 0.8135,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/4a01e4950e4ba970#0"
+ },
+ "3": {
+  "cosine": 0.7978,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/0ecba57a3d9eeb76#0"
+ },
+ "4": {
+  "cosine": 0.8414,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#0"
+ },
+ "5": {
+  "cosine": 0.7268,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/3f343630c8a3efc6#0"
+ },
+ "6": {
+  "cosine": 0.7741,
+  "source": "results/exp5_rejuvenation/mimo/pilot-3/mmtom/embedding_rejuvenation/items/515863b696e37f12#0"
+ },
+ "7": {
+  "cosine": 0.8908,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#3"
+ },
+ "8": {
+  "cosine": 0.8731,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/4a01e4950e4ba970#2"
+ },
+ "9": {
+  "cosine": 0.9367,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/3f343630c8a3efc6#1"
+ },
+ "10": {
+  "cosine": 0.6834,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/5f0d0065d5409d0e#0"
+ },
+ "11": {
+  "cosine": 0.9687,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/ad1fb2ca93a1726b#4"
+ },
+ "12": {
+  "cosine": 0.7581,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/8c9714d701c8069a#0"
+ },
+ "13": {
+  "cosine": 0.8147,
+  "source": "results/exp5_rejuvenation/mimo/pilot-3/mmtom/embedding_rejuvenation/items/4a01e4950e4ba970#2"
+ },
+ "14": {
+  "cosine": 0.8679,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#0"
+ },
+ "15": {
+  "cosine": 0.8681,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#3"
+ },
+ "16": {
+  "cosine": 0.9244,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/ad1fb2ca93a1726b#2"
+ },
+ "17": {
+  "cosine": 0.6174,
+  "source": "results/exp5_rejuvenation/mimo/pilot-3/mmtom/embedding_rejuvenation/items/76bd9ae5a8554636#0"
+ },
+ "18": {
+  "cosine": 0.8563,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/3f343630c8a3efc6#3"
+ },
+ "19": {
+  "cosine": 0.9053,
+  "source": "results/exp5_rejuvenation/mimo/pilot-3/mmtom/embedding_rejuvenation/items/4a01e4950e4ba970#1"
+ },
+ "20": {
+  "cosine": 0.9608,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/ad1fb2ca93a1726b#4"
+ },
+ "21": {
+  "cosine": 0.8537,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/5f0d0065d5409d0e#0"
+ },
+ "22": {
+  "cosine": 0.8531,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/8c9714d701c8069a#0"
+ },
+ "23": {
+  "cosine": 0.9503,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/8c9714d701c8069a#1"
+ },
+ "24": {
+  "cosine": 0.9124,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#2"
+ },
+ "25": {
+  "cosine": 0.7099,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/76bd9ae5a8554636#0"
+ },
+ "26": {
+  "cosine": 0.8823,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#3"
+ },
+ "27": {
+  "cosine": 0.931,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/87ca65f63103a624#1"
+ },
+ "28": {
+  "cosine": 0.7429,
+  "source": "results/exp5_rejuvenation/mimo/pilot-3/mmtom/embedding_rejuvenation/items/76bd9ae5a8554636#0"
+ },
+ "29": {
+  "cosine": 0.8454,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/4a01e4950e4ba970#0"
+ },
+ "30": {
+  "cosine": 0.9281,
+  "source": "results/exp5_rejuvenation/mimo/pilot-10/mmtom/embedding_rejuvenation/items/ad1fb2ca93a1726b#3"
+ }
+}

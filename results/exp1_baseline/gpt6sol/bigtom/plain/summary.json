@@ -1,0 +1,26 @@
+[
+ {
+  "arm": "plain",
+  "benchmark": "bigtom",
+  "method": "plain",
+  "total": 249,
+  "correct": 248,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 517.4634362885263,
+  "accuracy": 0.9959839357429718,
+  "calls": 249,
+  "prompt_tokens": 44182,
+  "completion_tokens": 4598,
+  "usage_missing": 0,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[true_belief]": 0.9906542056074766,
+  "accuracy[backward_belief_false_belief]": 1.0,
+  "accuracy[backward_belief_true_belief]": 0.9230769230769231,
+  "accuracy[forward_action_false_belief]": 1.0,
+  "accuracy[forward_action_true_belief]": 1.0,
+  "accuracy[forward_belief_false_belief]": 1.0,
+  "accuracy[forward_belief_true_belief]": 1.0
+ }
+]

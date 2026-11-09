@@ -1,0 +1,21 @@
+[
+ {
+  "arm": "mental_models",
+  "benchmark": "mmtom",
+  "method": "thoughttracing",
+  "total": 3,
+  "correct": 1,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 270.49618266604375,
+  "accuracy": 0.3333333333333333,
+  "calls": 55,
+  "prompt_tokens": 23606,
+  "completion_tokens": 4839,
+  "usage_missing": 1,
+  "accuracy[1.3]": 1.0,
+  "accuracy[2.3]": 0.0,
+  "accuracy[2.4]": 0.0
+ }
+]

@@ -1,0 +1,25 @@
+[
+ {
+  "arm": "plain",
+  "benchmark": "mmtom",
+  "method": "plain",
+  "total": 200,
+  "correct": 90,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 796.2182915066369,
+  "accuracy": 0.45,
+  "calls": 202,
+  "prompt_tokens": 79411,
+  "completion_tokens": 600,
+  "usage_missing": 2,
+  "accuracy[1.1]": 1.0,
+  "accuracy[1.2]": 0.38235294117647056,
+  "accuracy[1.3]": 0.34375,
+  "accuracy[2.1]": 0.034482758620689655,
+  "accuracy[2.2]": 0.56,
+  "accuracy[2.3]": 0.0,
+  "accuracy[2.4]": 0.75
+ }
+]

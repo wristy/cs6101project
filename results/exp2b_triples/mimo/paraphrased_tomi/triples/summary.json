@@ -1,0 +1,28 @@
+[
+ {
+  "arm": "triples",
+  "benchmark": "paraphrased_tomi",
+  "method": "thoughttracing",
+  "total": 200,
+  "correct": 148,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 30041.227885165717,
+  "accuracy": 0.74,
+  "calls": 6670,
+  "prompt_tokens": 2524440,
+  "completion_tokens": 662424,
+  "usage_missing": 24,
+  "accuracy[false_belief]": 0.81,
+  "accuracy[true_belief]": 0.67,
+  "accuracy[first_order_0_no_tom]": 0.64,
+  "accuracy[first_order_0_tom]": 0.92,
+  "accuracy[first_order_1_no_tom]": 0.72,
+  "accuracy[first_order_1_tom]": 1.0,
+  "accuracy[second_order_0_no_tom]": 0.64,
+  "accuracy[second_order_0_tom]": 0.56,
+  "accuracy[second_order_1_no_tom]": 0.68,
+  "accuracy[second_order_1_tom]": 0.76
+ }
+]

@@ -1,0 +1,22 @@
+[
+ {
+  "arm": "autotom_ab",
+  "benchmark": "paraphrased_tomi",
+  "method": "thoughttracing",
+  "total": 3,
+  "correct": 3,
+  "errors": 0,
+  "invalid": 0,
+  "seconds": 331.78712425089907,
+  "accuracy": 1.0,
+  "calls": 93,
+  "prompt_tokens": 28929,
+  "completion_tokens": 4472,
+  "usage_missing": 3,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[true_belief]": 1.0,
+  "accuracy[first_order_1_tom]": 1.0,
+  "accuracy[second_order_0_no_tom]": 1.0,
+  "accuracy[second_order_1_tom]": 1.0
+ }
+]

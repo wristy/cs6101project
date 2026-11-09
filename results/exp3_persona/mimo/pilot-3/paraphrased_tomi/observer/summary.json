@@ -1,0 +1,22 @@
+[
+ {
+  "arm": "observer",
+  "benchmark": "paraphrased_tomi",
+  "method": "thoughttracing",
+  "total": 3,
+  "correct": 3,
+  "errors": 0,
+  "invalid": 0,
+  "seconds": 291.0841655420372,
+  "accuracy": 1.0,
+  "calls": 90,
+  "prompt_tokens": 34223,
+  "completion_tokens": 8969,
+  "usage_missing": 0,
+  "accuracy[false_belief]": 1.0,
+  "accuracy[true_belief]": 1.0,
+  "accuracy[first_order_1_tom]": 1.0,
+  "accuracy[second_order_0_no_tom]": 1.0,
+  "accuracy[second_order_1_tom]": 1.0
+ }
+]

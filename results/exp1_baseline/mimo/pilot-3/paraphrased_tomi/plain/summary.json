@@ -1,0 +1,23 @@
+[
+ {
+  "arm": "plain",
+  "benchmark": "paraphrased_tomi",
+  "method": "plain",
+  "total": 3,
+  "correct": 1,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 6.5126778749981895,
+  "accuracy": 0.3333333333333333,
+  "calls": 3,
+  "prompt_tokens": 368,
+  "completion_tokens": 37,
+  "usage_missing": 0,
+  "accuracy[false_belief]": 0.0,
+  "accuracy[true_belief]": 1.0,
+  "accuracy[first_order_1_tom]": 0.0,
+  "accuracy[second_order_0_no_tom]": 1.0,
+  "accuracy[second_order_1_tom]": 0.0
+ }
+]

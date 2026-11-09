@@ -1,0 +1,28 @@
+[
+ {
+  "arm": "plain",
+  "benchmark": "paraphrased_tomi",
+  "method": "plain",
+  "total": 200,
+  "correct": 116,
+  "errors": 0,
+  "invalid": 0,
+  "ties": 0,
+  "seconds": 614.879914795747,
+  "accuracy": 0.58,
+  "calls": 202,
+  "prompt_tokens": 25851,
+  "completion_tokens": 3163,
+  "usage_missing": 2,
+  "accuracy[false_belief]": 0.44,
+  "accuracy[true_belief]": 0.72,
+  "accuracy[first_order_0_no_tom]": 0.96,
+  "accuracy[first_order_0_tom]": 0.16,
+  "accuracy[first_order_1_no_tom]": 0.8,
+  "accuracy[first_order_1_tom]": 0.24,
+  "accuracy[second_order_0_no_tom]": 0.48,
+  "accuracy[second_order_0_tom]": 0.72,
+  "accuracy[second_order_1_no_tom]": 0.64,
+  "accuracy[second_order_1_tom]": 0.64
+ }
+]
