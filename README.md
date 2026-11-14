@@ -59,15 +59,23 @@ ThoughtTracing 96.4.
 | ParaphrasedToMi | 58.0 | 62.5 | **74.0** | 176 / 32 |
 | ExploreToM | 53.5 | **59.0** | 47.5 | 237 / 33 |
 
-- **AutoToM's lead from its paper is gone.** It ties ThoughtTracing on MMToM-QA (p = 0.44), loses on
-  ParaphrasedToMi (−11.5 points, p = 0.015) and wins only on ExploreToM (+11.5, p = 0.036), where it
-  needs about 7 times as many calls.
+- **AutoToM's lead from its paper is largely gone.** It is only 3 points ahead of ThoughtTracing on
+  MMToM-QA (p = 0.44), loses on ParaphrasedToMi (−11.5 points, p = 0.015) and wins only on ExploreToM
+  (+11.5, p = 0.036), where it needs about 7 times as many calls and 3 times as many tokens. Most of
+  those calls come from its nested inference on second-order questions.
 - **The methods fail differently.** On ParaphrasedToMi, ThoughtTracing gets 81% of false-belief
-  questions against AutoToM's 45%, but AutoToM is better on true-belief ones (80% vs 67%).
+  questions against AutoToM's 45%, but AutoToM is better on true-belief ones (80% vs 67%), and
+  ExploreToM shows the same pattern. ThoughtTracing's perception step decides whether the agent saw a
+  change by whether the passage names the agent, so it often assumes the agent missed something.
+  AutoToM answers from the latest time step and looks further back only when uncertain, so it often
+  stops too early on false beliefs, which formed earlier.
 - **Structure only pays off on hard benchmarks.** On BigToM, plain prompting is already near perfect
   and AutoToM gets 47 questions wrong that plain prompting gets right. Both methods clearly beat plain
   prompting on MMToM-QA, and ThoughtTracing does on ParaphrasedToMi (p < 0.001). On ExploreToM,
   ThoughtTracing is no better than plain prompting.
+- **Goal questions stay hard for every method.** The MMToM-QA gains come entirely from belief
+  questions. On goal questions all three approaches get only about a third right, mostly by picking the
+  object already inside the container the agent is heading to. It is not clear why.
 
 ### Experiments 2–6: can small changes improve ThoughtTracing?
 
@@ -91,7 +99,8 @@ bootstrap interval and an exact McNemar p-value.
 - **The summary (+4) and embedding rejuvenation (+3.5)** both lift ThoughtTracing above AutoToM on
   MMToM-QA, but neither gain is certain.
 - **Structured hypotheses (2a, 2b) did not help.** This matches the ThoughtTracing authors' own
-  experience that fixed structures worked less well than free text.
+  experience that fixed structures worked less well than free text. In 2a, Jev picked "belief and
+  goal" for every story, so it in effect tested fixed belief-and-goal slots.
 - **Weighting is not the bottleneck.** ThoughtTracing's own weights come out exactly equal in
   57–89% of update steps, so they rarely tell hypotheses apart. Both new scorers almost always separate
   them, yet accuracy does not move. Jev matches the control with about a third fewer tokens.
@@ -103,7 +112,7 @@ bootstrap interval and an exact McNemar p-value.
 - **Free-text answers are graded by ThoughtTracing's own rule.** An answer counts as correct if it
   contains the right location. 8–11 correct answers per ParaphrasedToMi arm also name the wrong one.
   A strict grader lowers each free-text arm by 8 to 11 answers and changes no conclusion.
-- **Token counts are a lower bound.** The API sometimes omits usage. By our estimate, the final results took about $40 of API calls.
+- **Token counts are a lower bound.** The API sometimes omits usage. By our estimate, the final results took about $50 of API calls.
 - **GPT-6 Sol ties.** It produced 42 exact ties under AutoToM on BigToM, broken by taking the first option.
 
 The per-question records behind every number are in `results/` (see [Results files](#results-files)).

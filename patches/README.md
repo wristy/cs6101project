@@ -26,7 +26,7 @@ Changes are enabled by `TOM_RESEARCH_BACKEND=1` inside isolated method workers:
   as on ThoughtTracing's path: AutoToM parses only the start of each reply.
 
 Upstream bugs found in the full run, each reproduced offline from saved call
-logs and fixed with the smallest change that keeps the intended behaviour:
+logs and fixed with the smallest change that keeps the intended behavior:
 
 - BigToM questions where the agent has not acted yet (`BayesianInference.infer`,
   `init_belief`): the forward-action branch stored the initial-belief prior as a
